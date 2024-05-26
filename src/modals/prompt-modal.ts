@@ -24,7 +24,6 @@ export default class PromptModal extends Modal {
     }
 
     onOpen() {
-        console.log(this.plugin.settings);
         const { contentEl, modalEl } = this;
         modalEl.addClasses(["pr-w-1/2"]);
         const wrapper = contentEl.createEl("div");
@@ -125,6 +124,7 @@ export default class PromptModal extends Modal {
             .addClasses(["pr-font-semibold", "pr-mb-2"]);
         for (const prompt of recentPrompts) {
             const li = recentPromptsList.createEl("li");
+            li.ariaLabel = prompt;
             li.addClasses([
                 "pr-cursor-pointer",
                 "pr-p-2",
@@ -177,7 +177,6 @@ export default class PromptModal extends Modal {
             })
             .then((response) => {
                 this.saveRecentPrompt(textarea, recentPrompts);
-                console.log(response.text);
                 this.editor.setValue(response.text);
             })
             .catch((e) => {
@@ -206,7 +205,6 @@ export default class PromptModal extends Modal {
             })
             .then((response) => {
                 this.saveRecentPrompt(textarea, recentPrompts);
-                console.log(response);
                 this.editor.replaceRange(
                     response.text,
                     this.editor.getCursor(),
@@ -238,7 +236,6 @@ export default class PromptModal extends Modal {
             })
             .then((response) => {
                 this.saveRecentPrompt(textarea, recentPrompts);
-                console.log(response);
                 this.editor.replaceSelection(response.text);
             })
             .catch((e) => {

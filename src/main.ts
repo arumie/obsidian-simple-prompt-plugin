@@ -6,17 +6,21 @@ import {
     Plugin,
     PluginSettingTab,
     Setting,
-    TextAreaComponent
+    TextAreaComponent,
 } from "obsidian";
 import {
     CURSOR_COMMAND_NAME,
     DEFAULT_SETTINGS,
     DOC_COMMAND_NAME,
-    SELECTION_COMMAND_NAME
+    SELECTION_COMMAND_NAME,
 } from "./constants";
 import ApiKeyModal from "./modals/api-key-modal";
 import PromptModal from "./modals/prompt-modal";
-import { CommandTypes, OpenAIModelType, SimplePromptPluginSettings } from "./types";
+import {
+    CommandTypes,
+    OpenAIModelType,
+    SimplePromptPluginSettings,
+} from "./types";
 
 export default class SimplePromptPlugin extends Plugin {
     settings: SimplePromptPluginSettings;
@@ -82,6 +86,8 @@ class PromptSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
+        new Setting(containerEl).setHeading().setName("LLM Settings");
+
         const apiKeySetting = new Setting(containerEl)
             .setName("API key")
             .setDesc("API key for LLM");
@@ -91,9 +97,9 @@ class PromptSettingTab extends PluginSettingTab {
                 "pr-border",
                 "pr-border-solid",
                 "pr-border-slate-200",
-                "pr-shadow-md",
+                "pr-shadow-sm",
                 "hover:pr-bg-slate-100",
-                "hover:pr-shadow-md",
+                "hover:pr-shadow-sm",
             ]);
             btn.setIcon("key")
                 .setTooltip("Set API key")
@@ -103,10 +109,10 @@ class PromptSettingTab extends PluginSettingTab {
             return btn;
         });
 
-        const modelSetting = new Setting(containerEl)
+        new Setting(containerEl)
             .setName("Model")
-            .setDesc("Which LLM model to use");
-        modelSetting.addDropdown((dropdown) =>
+            .setDesc("Which LLM model to use")
+            .addDropdown((dropdown) =>
             dropdown
                 .addOptions({
                     "gpt-3.5-turbo": "GPT-3.5 Turbo",
@@ -120,26 +126,38 @@ class PromptSettingTab extends PluginSettingTab {
                 })
         );
 
-        const recentPromptsLimitSetting = new Setting(containerEl)
-            .setName("Recents Prompt Limit")
-            .setDesc("How many recent prompts to store");
-        recentPromptsLimitSetting.addSlider((slider) =>
-            slider
-                .setLimits(1, 10, 1)
-                .setDynamicTooltip()
-                .setValue(5)
-                .onChange(async (value) => {
-                    this.plugin.settings.recentsLimit = value;
-                    await this.plugin.saveSettings();
-                })
-        );
+        new Setting(containerEl).setHeading().setName("Recent Prompts");
+        new Setting(containerEl)
+            .setName("Limit")
+            .setDesc("How many recent prompts to store")
+            .addSlider((slider) =>
+                slider
+                    .setLimits(1, 10, 1)
+                    .setDynamicTooltip()
+                    .setValue(5)
+                    .onChange(async (value) => {
+                        this.plugin.settings.recentsLimit = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
 
         let currentTemplate: CommandTypes = "selection";
-        new Setting(containerEl).setName("Prompt Templates");
+        new Setting(containerEl).setName("Prompt Templates").setHeading();
 
         let promptTemplateTextArea: TextAreaComponent;
         new Setting(containerEl)
             .setDesc("Pick the template to edit")
+            .addButton((button) => 
+                button
+                .setTooltip("Revert selected template to default")
+                .setIcon("reset")
+                .onClick(async () => {
+                    const defaultTemplate = DEFAULT_SETTINGS.prompTemplates[currentTemplate];
+                    promptTemplateTextArea.setValue(defaultTemplate);
+                    this.plugin.settings.prompTemplates[currentTemplate] = defaultTemplate;
+                    this.plugin.saveSettings();
+                })
+            )
             .addDropdown((dropdown) =>
                 dropdown
                     .addOptions({
@@ -159,7 +177,10 @@ class PromptSettingTab extends PluginSettingTab {
             );
 
         const promptTemplatesSetting = new Setting(containerEl).setDesc(
-            "Define the prompt templates used for generating content"
+            `Define the prompt templates used for generating content.
+            
+             Don't delete the placeholders like <SELECTION>, <DOCUMENT>, <REQUEST>, <QUERY> etc.
+            `
         );
         promptTemplatesSetting.settingEl.style.alignItems = "start";
         promptTemplatesSetting.addTextArea((textArea) => {
@@ -177,10 +198,6 @@ class PromptSettingTab extends PluginSettingTab {
                 this.plugin.settings.prompTemplates[currentTemplate] =
                     textArea.getValue();
                 this.plugin.saveSettings();
-                console.log(
-                    "Saved prompt template!",
-                    this.plugin.settings.prompTemplates[currentTemplate]
-                );
             };
             return textArea.setValue(
                 this.plugin.settings.prompTemplates[
@@ -190,10 +207,7 @@ class PromptSettingTab extends PluginSettingTab {
         });
     }
 
-    validateTemplate(
-        value: string,
-        currentTemplate: CommandTypes
-    ): boolean {
+    validateTemplate(value: string, currentTemplate: CommandTypes): boolean {
         switch (currentTemplate) {
             case "document":
                 if (

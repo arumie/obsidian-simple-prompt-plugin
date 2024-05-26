@@ -9,22 +9,8 @@ If your plugin does not need CSS, delete this file.
 @tailwind components;
 @tailwind utilities;
 
-.wrapper {
-    padding: 0.5em 0.5em 0.5em 0.5em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: 1em;
-}
-
-.textarea {
-    flex-grow: 1;
-    width: 100%;
-    height: 100px;
-    resize: none;
-}
+/* --- Loading --- */
+/* Original code from: https://github.com/maxbeier/text-spinners/blob/master/spinners.css*/
 
 .loading {
     display: inline-block;
