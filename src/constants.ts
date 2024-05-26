@@ -31,7 +31,6 @@ Answer:
 Knock, knock. Who's there? Lettuce. Lettuce who? Lettuce in, it's cold out here!
 ====================================    
 
-Text: 
 Request: 
 ==================
 <QUERY>

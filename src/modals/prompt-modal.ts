@@ -1,4 +1,3 @@
-import { OpenAI, SimplePrompt } from "llamaindex";
 import { Editor, Modal, Notice } from "obsidian";
 import {
     CURSOR_COMMAND_NAME,
@@ -7,6 +6,7 @@ import {
 } from "../constants";
 import { CommandTypes } from "../types";
 import SimplePromptPlugin from "src/main";
+import OpenAI from "openai";
 
 export default class PromptModal extends Modal {
     editor: Editor;
@@ -36,7 +36,7 @@ export default class PromptModal extends Modal {
             "pr-items-center",
         ]);
 
-        const { textarea, recentPrompts } = this.buildPromptFields(wrapper);
+        const { textarea } = this.buildPromptFields(wrapper);
 
         const button = wrapper.createEl("button", { text: "Submit" });
         button.addEventListener("click", async () => {
@@ -47,28 +47,15 @@ export default class PromptModal extends Modal {
             wrapper.innerHTML = "";
             const loader = wrapper.createEl("span");
             loader.addClasses(["loading", "dots", "pr-text-xl"]);
-            const llm = new OpenAI({
-                model: this.plugin.settings.model,
-                apiKey: this.plugin.settings.apiKey ?? "",
-                additionalSessionOptions: { dangerouslyAllowBrowser: true },
-            });
             switch (this.type) {
                 case "document":
-                    await this.generateForDocument(
-                        llm,
-                        textarea,
-                        recentPrompts
-                    );
+                    await this.generateForDocument(textarea);
                     break;
                 case "cursor":
-                    await this.generateAtCursor(llm, textarea, recentPrompts);
+                    await this.generateAtCursor(textarea);
                     break;
                 case "selection":
-                    await this.generateForSelection(
-                        llm,
-                        textarea,
-                        recentPrompts
-                    );
+                    await this.generateForSelection(textarea);
                     break;
             }
 
@@ -90,7 +77,7 @@ export default class PromptModal extends Modal {
         }
     }
 
-    private buildPromptFields(wrapper: HTMLDivElement) {
+    private buildPromptFields(wrapper: HTMLDivElement): { textarea: HTMLTextAreaElement } {
         const title = wrapper.createEl("h3", { text: this.getTitle() });
         title.addClasses(["pr-text-lg", "pr-font-semibold", "pr-mb-5"]);
 
@@ -110,7 +97,6 @@ export default class PromptModal extends Modal {
         const recentPrompts = this.plugin.settings.recentPrompts;
         const recentPromptsList = promptWrapper.createEl("ul");
         recentPromptsList.addClasses([
-            "pr-w-1/4",
             "pr-pl-5",
             "pr-border-0",
             "pr-border-l",
@@ -132,6 +118,7 @@ export default class PromptModal extends Modal {
                 "pr-border-solid",
                 "pr-my-1",
                 "pr-rounded-md",
+                "pr-min-w-40",
                 "pr-border-slate-200",
                 "hover:pr-bg-slate-100",
             ]);
@@ -152,91 +139,74 @@ export default class PromptModal extends Modal {
             "pr-border",
             "pr-rounded-md",
             "pr-w-full",
-            "pr-h-40",
+            "pr-min-h-40",
+            "pr-h-auto",
             "pr-resize-none",
+            "pr-text-base",
         ]);
-        return { textarea, recentPrompts };
+        return { textarea };
     }
 
     private async generateForDocument(
-        llm: OpenAI,
         textarea: HTMLTextAreaElement,
-        recentPrompts: string[]
     ) {
-        const prompt: SimplePrompt = ({ document, request }) => {
-            return this.plugin.settings.prompTemplates.document
-                .replace("<DOCUMENT>", `${document}`)
-                .replace("<REQUEST>", `${request}`);
-        };
-        await llm
-            .complete({
-                prompt: prompt({
-                    document: this.editor.getValue(),
-                    request: textarea.value,
-                }),
-            })
-            .then((response) => {
-                this.saveRecentPrompt(textarea, recentPrompts);
-                this.editor.setValue(response.text);
-            })
-            .catch((e) => {
-                console.error(e);
-                new Notice(`Error generating content: ${e}`);
-            });
+        const prompt = this.plugin.settings.prompTemplates.document
+            .replace("<DOCUMENT>", `${this.editor.getValue()}`)
+            .replace("<REQUEST>", `${textarea.value}`);
+
+        await this.generate(textarea, prompt, (result) => {
+            this.editor.setValue(result);
+        });
     }
 
     private async generateAtCursor(
-        llm: OpenAI,
         textarea: HTMLTextAreaElement,
-        recentPrompts: string[]
     ) {
-        const prompt: SimplePrompt = ({ query }) => {
-            return this.plugin.settings.prompTemplates.cursor.replace(
-                "<QUERY>",
-                `${query}`
+        const prompt = this.plugin.settings.prompTemplates.cursor.replace(
+            "<QUERY>",
+            `${textarea.value}`
+        );
+
+        await this.generate(textarea, prompt, (result) => {
+            this.editor.replaceRange(
+                result,
+                this.editor.getCursor(),
+                this.editor.getCursor()
             );
-        };
-        await llm
-            .complete({
-                prompt: prompt({
-                    query: textarea.value,
-                    context: this.editor.getSelection(),
-                }),
-            })
-            .then((response) => {
-                this.saveRecentPrompt(textarea, recentPrompts);
-                this.editor.replaceRange(
-                    response.text,
-                    this.editor.getCursor(),
-                    this.editor.getCursor()
-                );
-            })
-            .catch((e) => {
-                console.error(e);
-                new Notice(`Error generating content: ${e}`);
-            });
+        });
     }
 
     private async generateForSelection(
-        llm: OpenAI,
         textarea: HTMLTextAreaElement,
-        recentPrompts: string[]
     ) {
-        const prompt: SimplePrompt = ({ selection, request }) => {
-            return this.plugin.settings.prompTemplates.selection
-                .replace("<SELECTION>", `${selection}`)
-                .replace("<REQUEST>", `${request}`);
-        };
-        await llm
-            .complete({
-                prompt: prompt({
-                    query: textarea.value,
-                    context: this.editor.getSelection(),
-                }),
+        const prompt = this.plugin.settings.prompTemplates.selection
+            .replace("<SELECTION>", `${this.editor.getSelection()}`)
+            .replace("<REQUEST>", `${textarea.value}`);
+        await this.generate(textarea, prompt, (result) => {
+            this.editor.replaceSelection(result);
+        });
+    }
+
+    private async generate(
+        textarea: HTMLTextAreaElement,
+        prompt: string,
+        fn: (result: string) => void
+    ) {
+        const openai = new OpenAI({
+            apiKey: this.plugin.settings.apiKey ?? "",
+            dangerouslyAllowBrowser: true,
+        });
+
+        await openai.chat.completions
+            .create({
+                model: this.plugin.settings.model,
+                messages: [{ role: "user", content: prompt }],
             })
             .then((response) => {
-                this.saveRecentPrompt(textarea, recentPrompts);
-                this.editor.replaceSelection(response.text);
+                if (response.choices[0].message.content) {
+                    this.saveRecentPrompt(textarea);
+                    fn(response.choices[0].message.content);
+                }
             })
             .catch((e) => {
                 console.error(e);
@@ -244,22 +214,24 @@ export default class PromptModal extends Modal {
             });
     }
 
-    private saveRecentPrompt(
-        textarea: HTMLTextAreaElement,
-        recentPrompts: string[]
-    ) {
+    private saveRecentPrompt(textarea: HTMLTextAreaElement) {
         if (textarea.value !== "") {
-            if (!recentPrompts.includes(textarea.value)) {
+            if (!this.plugin.settings.recentPrompts.includes(textarea.value)) {
                 const newLength = this.plugin.settings.recentPrompts.unshift(
                     textarea.value
                 );
                 if (newLength > this.plugin.settings.recentsLimit) {
-                    this.plugin.settings.recentPrompts.pop();
+                    this.plugin.settings.recentPrompts.splice(
+                        0,
+                        this.plugin.settings.recentsLimit
+                    );
                 }
             } else {
-                const index = recentPrompts.indexOf(textarea.value);
-                recentPrompts.splice(index, 1);
-                recentPrompts.unshift(textarea.value);
+                const index = this.plugin.settings.recentPrompts.indexOf(
+                    textarea.value
+                );
+                this.plugin.settings.recentPrompts.splice(index, 1);
+                this.plugin.settings.recentPrompts.unshift(textarea.value);
             }
             this.plugin.saveSettings();
         }
