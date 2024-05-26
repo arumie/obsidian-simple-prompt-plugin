@@ -1,0 +1,10 @@
+{
+	"id": "simple-prompt-plugin",
+	"name": "Simple Prompt Plugin",
+	"version": "0.0.1",
+	"minAppVersion": "0.15.0",
+	"description": "Simple prompt plugin for generating content using LLMs",
+	"author": "arumie",
+	"authorUrl": "https://github.com/arumie",
+	"isDesktopOnly": false
+}
