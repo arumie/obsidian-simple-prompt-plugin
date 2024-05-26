@@ -27,6 +27,7 @@ It also gives the following options:
 - Add "**Generate image**" command to generate images using LLMs.
 - Add "**Generate content som YouTube link**" command to generate content based on a YouTube link.
 - Add support for **indexing all documents in the vault** and generating content based on the index.
+- Add encryption for the saved API key.
 
 ## How to use
 
@@ -39,3 +40,7 @@ It also gives the following options:
 ### Manually installing the plugin
 
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/simple-prompt-plugin/`.
+- Reload Obsidian.
+
+**Note**: The plugin saves the API key in the Obsidian vault settings. Make sure to keep your API key safe. 
+- If using Git plugin. Add .gitignore with `.obsidian/plugins/simple-prompt-plugin/data.json` to the vault to avoid pushing the API key to your repository.
