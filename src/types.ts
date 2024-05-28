@@ -10,4 +10,5 @@ export interface SimplePromptPluginSettings {
     recentPrompts: string[];
     recentsLimit: number;
     prompTemplates: Record<CommandTypes, string>;
+    streaming: boolean;
 }

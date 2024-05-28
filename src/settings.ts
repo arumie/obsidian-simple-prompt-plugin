@@ -1,5 +1,16 @@
-import { App, Notice, PluginSettingTab, Setting, TextAreaComponent } from "obsidian";
-import { CURSOR_COMMAND_NAME, DEFAULT_SETTINGS, DOC_COMMAND_NAME, SELECTION_COMMAND_NAME } from "./constants";
+import {
+    App,
+    Notice,
+    PluginSettingTab,
+    Setting,
+    TextAreaComponent,
+} from "obsidian";
+import {
+    CURSOR_COMMAND_NAME,
+    DEFAULT_SETTINGS,
+    DOC_COMMAND_NAME,
+    SELECTION_COMMAND_NAME,
+} from "./constants";
 import SimplePromptPlugin from "./main";
 import ApiKeyModal from "./modals/api-key-modal";
 import TemplateModal from "./modals/template-modal";
@@ -45,18 +56,30 @@ class SimplePromptSettingTab extends PluginSettingTab {
             .setName("Model")
             .setDesc("Which LLM model to use")
             .addDropdown((dropdown) =>
-            dropdown
-                .addOptions({
-                    "gpt-3.5-turbo": "GPT-3.5 Turbo",
-                    "gpt-4-turbo": "GPT-4 Turbo",
-                    "gpt-4o": "GPT-4 Omni",
-                })
-                .setValue(this.plugin.settings.model)
-                .onChange(async (value: OpenAIModelType) => {
-                    this.plugin.settings.model = value;
-                    await this.plugin.saveSettings();
-                })
-        );
+                dropdown
+                    .addOptions({
+                        "gpt-3.5-turbo": "GPT-3.5 Turbo",
+                        "gpt-4-turbo": "GPT-4 Turbo",
+                        "gpt-4o": "GPT-4 Omni",
+                    })
+                    .setValue(this.plugin.settings.model)
+                    .onChange(async (value: OpenAIModelType) => {
+                        this.plugin.settings.model = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Streaming")
+            .setDesc("Enable streaming of responses from LLMs")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.streaming)
+                    .onChange(async (value) => {
+                        this.plugin.settings.streaming = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
 
         new Setting(containerEl).setHeading().setName("Recent Prompts");
         new Setting(containerEl)
@@ -69,7 +92,8 @@ class SimplePromptSettingTab extends PluginSettingTab {
                     .setValue(5)
                     .onChange(async (value) => {
                         this.plugin.settings.recentsLimit = value;
-                        this.plugin.settings.recentPrompts = this.plugin.settings.recentPrompts.slice(0, value);
+                        this.plugin.settings.recentPrompts =
+                            this.plugin.settings.recentPrompts.slice(0, value);
                         await this.plugin.saveSettings();
                     })
             );
@@ -97,27 +121,29 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         }
                     })
             );
-            
+
         new Setting(containerEl)
-        .addButton((button) => 
-            button
-            .setTooltip("Revert selected template to default")
-            .setIcon("reset")
-            .onClick(async () => {
-                const defaultTemplate = DEFAULT_SETTINGS.prompTemplates[currentTemplate];
-                this.plugin.settings.prompTemplates[currentTemplate] = defaultTemplate;
-                new Notice("Template successfully reset!");
-                this.plugin.saveSettings();
-            })
-        )
-        .addButton((button) => 
-            button
-            .setTooltip("Edit selected template")
-            .setIcon("pencil")
-            .onClick(async () => {
-                new TemplateModal(this.plugin, currentTemplate).open();
-            })
-        )
+            .addButton((button) =>
+                button
+                    .setTooltip("Revert selected template to default")
+                    .setIcon("reset")
+                    .onClick(async () => {
+                        const defaultTemplate =
+                            DEFAULT_SETTINGS.prompTemplates[currentTemplate];
+                        this.plugin.settings.prompTemplates[currentTemplate] =
+                            defaultTemplate;
+                        new Notice("Template successfully reset!");
+                        this.plugin.saveSettings();
+                    })
+            )
+            .addButton((button) =>
+                button
+                    .setTooltip("Edit selected template")
+                    .setIcon("pencil")
+                    .onClick(async () => {
+                        new TemplateModal(this.plugin, currentTemplate).open();
+                    })
+            );
     }
 }
 

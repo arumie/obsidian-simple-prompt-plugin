@@ -118,4 +118,5 @@ export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
         cursor: DEFAULT_CURSOR_PROMPT_TEMPLATE,
         document: DEFAULT_REWRITE_DOCUMENT_TEMPLATE,
     },
+    streaming: false,
 };

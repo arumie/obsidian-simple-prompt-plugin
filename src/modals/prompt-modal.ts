@@ -38,7 +38,7 @@ export default class PromptModal extends Modal {
 
         const { textarea } = this.buildPromptFields(wrapper);
 
-        const button = wrapper.createEl("button", { text: "Submit" });
+        const button = wrapper.createEl("button", { text: "Generate!" });
         button.addEventListener("click", async () => {
             if (textarea.value === "") {
                 new Notice("Please enter a prompt");
@@ -61,7 +61,19 @@ export default class PromptModal extends Modal {
 
             this.close();
         });
-        button.addClasses(["pr-p-5"]);
+
+        button.addClasses([
+            "pr-p-5",
+            "pr-rounded-md",
+            "pr-cursor-pointer",
+        ]);
+
+        textarea.addEventListener("keydown", (e: KeyboardEvent) => {
+            if (e.key === "Enter" && e.ctrlKey) {
+                e.preventDefault();
+                button.click();
+            }
+        });
     }
 
     private getTitle(): string | DocumentFragment | undefined {
@@ -77,7 +89,9 @@ export default class PromptModal extends Modal {
         }
     }
 
-    private buildPromptFields(wrapper: HTMLDivElement): { textarea: HTMLTextAreaElement } {
+    private buildPromptFields(wrapper: HTMLDivElement): {
+        textarea: HTMLTextAreaElement;
+    } {
         const title = wrapper.createEl("h3", { text: this.getTitle() });
         title.addClasses(["pr-text-lg", "pr-font-semibold", "pr-mb-5"]);
 
@@ -92,9 +106,24 @@ export default class PromptModal extends Modal {
         const textarea = promptWrapper.createEl("textarea", {
             placeholder: "Write your prompt here",
         });
+
+        textarea.addClasses([
+            "pr-p-2",
+            "pr-border",
+            "pr-rounded-md",
+            "pr-w-full",
+            "pr-min-h-40",
+            "pr-h-auto",
+            "pr-resize-none",
+            "pr-text-base",
+        ]);
+
         textarea.focus();
 
         const recentPrompts = this.plugin.settings.recentPrompts;
+        if (recentPrompts.length === 0) {
+            return { textarea };
+        }
         const recentPromptsList = promptWrapper.createEl("ul");
         recentPromptsList.addClasses([
             "pr-pl-5",
@@ -133,58 +162,57 @@ export default class PromptModal extends Modal {
                 textarea.value = prompt;
             });
         }
-
-        textarea.addClasses([
-            "pr-p-2",
-            "pr-border",
-            "pr-rounded-md",
-            "pr-w-full",
-            "pr-min-h-40",
-            "pr-h-auto",
-            "pr-resize-none",
-            "pr-text-base",
-        ]);
         return { textarea };
     }
 
-    private async generateForDocument(
-        textarea: HTMLTextAreaElement,
-    ) {
+    private async generateForDocument(textarea: HTMLTextAreaElement) {
         const prompt = this.plugin.settings.prompTemplates.document
             .replace("<DOCUMENT>", `${this.editor.getValue()}`)
             .replace("<REQUEST>", `${textarea.value}`);
 
-        await this.generate(textarea, prompt, (result) => {
-            this.editor.setValue(result);
-        });
+        if (this.plugin.settings.streaming) {
+            await this.generateStreaming(textarea, prompt, () => {
+                this.editor.setValue("");
+            });
+        } else {
+            await this.generate(textarea, prompt, (result) => {
+                this.editor.setValue(result);
+            });
+        }
     }
 
-    private async generateAtCursor(
-        textarea: HTMLTextAreaElement,
-    ) {
+    private async generateAtCursor(textarea: HTMLTextAreaElement) {
         const prompt = this.plugin.settings.prompTemplates.cursor.replace(
             "<QUERY>",
             `${textarea.value}`
         );
 
-        await this.generate(textarea, prompt, (result) => {
-            this.editor.replaceRange(
-                result,
-                this.editor.getCursor(),
-                this.editor.getCursor()
-            );
-        });
+        if (this.plugin.settings.streaming) {
+            await this.generateStreaming(textarea, prompt);
+        } else {
+            await this.generate(textarea, prompt, (result) => {
+                this.editor.replaceRange(
+                    result,
+                    this.editor.getCursor(),
+                    this.editor.getCursor()
+                );
+            });
+        }
     }
 
-    private async generateForSelection(
-        textarea: HTMLTextAreaElement,
-    ) {
+    private async generateForSelection(textarea: HTMLTextAreaElement) {
         const prompt = this.plugin.settings.prompTemplates.selection
             .replace("<SELECTION>", `${this.editor.getSelection()}`)
             .replace("<REQUEST>", `${textarea.value}`);
-        await this.generate(textarea, prompt, (result) => {
-            this.editor.replaceSelection(result);
-        });
+        if (this.plugin.settings.streaming) {
+            await this.generateStreaming(textarea, prompt, () => {
+                this.editor.replaceSelection("");
+            });
+        } else {
+            await this.generate(textarea, prompt, (result) => {
+                this.editor.replaceSelection(result);
+            });
+        }
     }
 
     private async generate(
@@ -212,6 +240,45 @@ export default class PromptModal extends Modal {
                 console.error(e);
                 new Notice(`Error generating content: ${e}`);
             });
+    }
+
+    private async generateStreaming(
+        textarea: HTMLTextAreaElement,
+        prompt: string,
+        onSuccess?: () => void
+    ) {
+        const openai = new OpenAI({
+            apiKey: this.plugin.settings.apiKey ?? "",
+            dangerouslyAllowBrowser: true,
+        });
+
+        const stream = await openai.chat.completions
+            .create({
+                model: this.plugin.settings.model,
+                messages: [{ role: "user", content: prompt }],
+                stream: true,
+            })
+            .catch((e) => {
+                console.error(e);
+                new Notice(`Error generating content: ${e}`);
+                return null;
+            });
+        if (stream) {
+            this.close();
+            if (onSuccess) onSuccess();
+            for await (const chunk of stream) {
+                const cursorPos = this.editor.getCursor();
+                const textChunk = chunk.choices[0].delta.content ?? ""
+                this.editor.replaceRange(
+                    textChunk,
+                    cursorPos,
+                    cursorPos
+                );
+                this.editor.setCursor(cursorPos.line, cursorPos.ch + textChunk.length);
+            }
+            new Notice("Action complete!");
+            this.saveRecentPrompt(textarea);
+        }
     }
 
     private saveRecentPrompt(textarea: HTMLTextAreaElement) {

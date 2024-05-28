@@ -31,8 +31,7 @@ It also gives the following options:
 
 ## How to use
 
-- Clone this repo.
-- Make sure your NodeJS is at least v20 (`node --version`).
+- Clone this repo into your Obsidian vault's plugins folder.
 - `npm i` or `yarn` to install dependencies.
 - `npm run dev` to start compilation in watch mode.
 - `npm run build:css` to build the css.
