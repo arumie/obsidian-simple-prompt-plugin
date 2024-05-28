@@ -116,7 +116,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         currentTemplate = value;
                         if (promptTemplateTextArea != null) {
                             promptTemplateTextArea.setValue(
-                                this.plugin.settings.prompTemplates[value] ?? ""
+                                this.plugin.settings.promptTemplates[value] ?? ""
                             );
                         }
                     })
@@ -129,8 +129,8 @@ class SimplePromptSettingTab extends PluginSettingTab {
                     .setIcon("reset")
                     .onClick(async () => {
                         const defaultTemplate =
-                            DEFAULT_SETTINGS.prompTemplates[currentTemplate];
-                        this.plugin.settings.prompTemplates[currentTemplate] =
+                            DEFAULT_SETTINGS.promptTemplates[currentTemplate];
+                        this.plugin.settings.promptTemplates[currentTemplate] =
                             defaultTemplate;
                         new Notice("Template successfully reset!");
                         this.plugin.saveSettings();

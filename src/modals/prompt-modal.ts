@@ -166,7 +166,7 @@ export default class PromptModal extends Modal {
     }
 
     private async generateForDocument(textarea: HTMLTextAreaElement) {
-        const prompt = this.plugin.settings.prompTemplates.document
+        const prompt = this.plugin.settings.promptTemplates.document
             .replace("<DOCUMENT>", `${this.editor.getValue()}`)
             .replace("<REQUEST>", `${textarea.value}`);
 
@@ -182,7 +182,7 @@ export default class PromptModal extends Modal {
     }
 
     private async generateAtCursor(textarea: HTMLTextAreaElement) {
-        const prompt = this.plugin.settings.prompTemplates.cursor.replace(
+        const prompt = this.plugin.settings.promptTemplates.cursor.replace(
             "<QUERY>",
             `${textarea.value}`
         );
@@ -201,7 +201,7 @@ export default class PromptModal extends Modal {
     }
 
     private async generateForSelection(textarea: HTMLTextAreaElement) {
-        const prompt = this.plugin.settings.prompTemplates.selection
+        const prompt = this.plugin.settings.promptTemplates.selection
             .replace("<SELECTION>", `${this.editor.getSelection()}`)
             .replace("<REQUEST>", `${textarea.value}`);
         if (this.plugin.settings.streaming) {

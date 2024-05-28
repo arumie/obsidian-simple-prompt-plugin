@@ -42,7 +42,7 @@ export default class TemplateModal extends Modal {
         desc.addClasses(["pr-text-xs", "pr-mb-5", "pr-text-slate-400"]);
 
         const input = wrapper.createEl("textarea", {
-            text: this.plugin.settings.prompTemplates[this.type] ?? "",
+            text: this.plugin.settings.promptTemplates[this.type] ?? "",
         });
 
         input.addClasses(["pr-p-2", "pr-border", "pr-rounded-md", "pr-w-full", "pr-min-h-56"]);
@@ -52,7 +52,7 @@ export default class TemplateModal extends Modal {
             if (!this.validateTemplate(input.value)) {
                 return;
             }
-            this.plugin.settings.prompTemplates[this.type] = input.value;
+            this.plugin.settings.promptTemplates[this.type] = input.value;
             await this.plugin.saveSettings();
             new Notice("Template successfully changed!");
             this.close();

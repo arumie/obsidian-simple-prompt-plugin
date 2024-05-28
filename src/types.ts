@@ -9,6 +9,6 @@ export interface SimplePromptPluginSettings {
     model: OpenAIModelType;
     recentPrompts: string[];
     recentsLimit: number;
-    prompTemplates: Record<CommandTypes, string>;
+    promptTemplates: Record<CommandTypes, string>;
     streaming: boolean;
 }

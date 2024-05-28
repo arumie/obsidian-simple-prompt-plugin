@@ -113,7 +113,7 @@ export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
     model: "gpt-3.5-turbo",
     recentPrompts: [],
     recentsLimit: 5,
-    prompTemplates: {
+    promptTemplates: {
         selection: DEFAULT_SELECTION_PROMPT_TEMPLATE,
         cursor: DEFAULT_CURSOR_PROMPT_TEMPLATE,
         document: DEFAULT_REWRITE_DOCUMENT_TEMPLATE,
