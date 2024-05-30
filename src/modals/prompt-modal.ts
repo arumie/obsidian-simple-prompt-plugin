@@ -288,10 +288,7 @@ export default class PromptModal extends Modal {
                     textarea.value
                 );
                 if (newLength > this.plugin.settings.recentsLimit) {
-                    this.plugin.settings.recentPrompts.splice(
-                        0,
-                        this.plugin.settings.recentsLimit
-                    );
+                    this.plugin.settings.recentPrompts.pop();
                 }
             } else {
                 const index = this.plugin.settings.recentPrompts.indexOf(
