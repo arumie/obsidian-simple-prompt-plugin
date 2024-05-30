@@ -43,3 +43,14 @@ It also gives the following options:
 
 **Note**: The plugin saves the API key in the Obsidian vault settings. Make sure to keep your API key safe. 
 - If using Git plugin. Add .gitignore with `.obsidian/plugins/simple-prompt-plugin/data.json` to the vault to avoid pushing the API key to your repository.
+
+## Demo
+
+### Rewrite document with prompt
+
+![Demo](./assets/SimplePromptDocument.gif)
+
+### Streaming, recent prompts, and generating content at cursor
+
+
+![Demo](./assets/SimplePromptDocument2.gif)
