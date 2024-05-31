@@ -5,12 +5,12 @@ import {
     SELECTION_COMMAND_NAME,
 } from "src/constants";
 import SimplePromptPlugin from "src/main";
-import { CommandTypes } from "src/types";
+import { CommandType } from "src/types";
 
 export default class TemplateModal extends Modal {
     plugin: SimplePromptPlugin;
-    type: CommandTypes;
-    constructor(plugin: SimplePromptPlugin, type: CommandTypes) {
+    type: CommandType;
+    constructor(plugin: SimplePromptPlugin, type: CommandType) {
         super(plugin.app);
         this.plugin = plugin;
         this.type = type;

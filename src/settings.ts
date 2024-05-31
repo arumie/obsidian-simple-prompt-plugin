@@ -14,7 +14,7 @@ import {
 import SimplePromptPlugin from "./main";
 import ApiKeyModal from "./modals/api-key-modal";
 import TemplateModal from "./modals/template-modal";
-import { CommandTypes, OpenAIModelType } from "./types";
+import { CommandType, OpenAIModelType } from "./types";
 
 class SimplePromptSettingTab extends PluginSettingTab {
     plugin: SimplePromptPlugin;
@@ -34,16 +34,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
         const apiKeySetting = new Setting(containerEl)
             .setName("API key")
             .setDesc("API key for LLM");
-        apiKeySetting.addExtraButton((btn) => {
-            btn.extraSettingsEl.addClasses([
-                "pr-w-20",
-                "pr-border",
-                "pr-border-solid",
-                "pr-border-slate-200",
-                "pr-shadow-sm",
-                "hover:pr-bg-slate-100",
-                "hover:pr-shadow-sm",
-            ]);
+        apiKeySetting.addButton((btn) => {
             btn.setIcon("key")
                 .setTooltip("Set API key")
                 .onClick(async () => {
@@ -87,9 +78,9 @@ class SimplePromptSettingTab extends PluginSettingTab {
             .setDesc("How many recent prompts to store")
             .addSlider((slider) =>
                 slider
-                    .setLimits(1, 10, 1)
+                    .setLimits(1, 20, 1)
                     .setDynamicTooltip()
-                    .setValue(5)
+                    .setValue(this.plugin.settings.recentsLimit)
                     .onChange(async (value) => {
                         this.plugin.settings.recentsLimit = value;
                         this.plugin.settings.recentPrompts =
@@ -97,12 +88,24 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     })
             );
+        new Setting(containerEl)
+            .setName("Enable/Disable")
+            .setDesc("Enable/Disable recent prompts")
+            .addToggle((toggle) =>
+                toggle
+                    .setValue(this.plugin.settings.recentPromptsEnabled)
+                    .onChange(async (value) => {
+                        this.plugin.settings.recentPromptsEnabled = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
 
-        let currentTemplate: CommandTypes = "selection";
+        let currentTemplate: CommandType = "selection";
         new Setting(containerEl).setName("Prompt Templates").setHeading();
 
         let promptTemplateTextArea: TextAreaComponent;
         new Setting(containerEl)
+            .setName("Template")
             .setDesc("Pick the template to edit")
             .addDropdown((dropdown) =>
                 dropdown
@@ -112,17 +115,32 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         document: DOC_COMMAND_NAME,
                     })
                     .setValue("selection")
-                    .onChange(async (value: CommandTypes) => {
+                    .onChange(async (value: CommandType) => {
                         currentTemplate = value;
                         if (promptTemplateTextArea != null) {
                             promptTemplateTextArea.setValue(
-                                this.plugin.settings.promptTemplates[value] ?? ""
+                                this.plugin.settings.promptTemplates[value] ??
+                                    ""
                             );
                         }
                     })
             );
 
         new Setting(containerEl)
+            .setName("Edit")
+            .setDesc("Edit the template")
+            .addButton((button) =>
+                button
+                    .setTooltip("Edit selected template")
+                    .setIcon("pencil")
+                    .onClick(async () => {
+                        new TemplateModal(this.plugin, currentTemplate).open();
+                    })
+            );
+
+        new Setting(containerEl)
+            .setName("Restore Default")
+            .setDesc("Restore template to default")
             .addButton((button) =>
                 button
                     .setTooltip("Revert selected template to default")
@@ -134,14 +152,6 @@ class SimplePromptSettingTab extends PluginSettingTab {
                             defaultTemplate;
                         new Notice("Template successfully reset!");
                         this.plugin.saveSettings();
-                    })
-            )
-            .addButton((button) =>
-                button
-                    .setTooltip("Edit selected template")
-                    .setIcon("pencil")
-                    .onClick(async () => {
-                        new TemplateModal(this.plugin, currentTemplate).open();
                     })
             );
     }

@@ -5,13 +5,15 @@ import {
     Plugin
 } from "obsidian";
 import {
-    CURSOR_COMMAND_NAME,
     DEFAULT_SETTINGS,
-    DOC_COMMAND_NAME,
-    SELECTION_COMMAND_NAME,
-    SETTINGS_SET_API_KEY_COMMAND_NAME
+    PROMPT_COMMANDS,
+    SETTINGS_CHANGE_LLM_MODEL_COMMAND_NAME,
+    SETTINGS_SET_API_KEY_COMMAND_NAME,
+    SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME,
+    SETTINGS_TOGGLE_STREAMING_COMMAND_NAME
 } from "./constants";
 import ApiKeyModal from "./modals/api-key-modal";
+import ModelModal from "./modals/model-modal";
 import PromptModal from "./modals/prompt-modal";
 import SimplePromptSettingTab from "./settings";
 import {
@@ -38,28 +40,42 @@ export default class SimplePromptPlugin extends Plugin {
         });
 
         this.addCommand({
-            id: "prompt-generate-content-from-selection",
-            name: SELECTION_COMMAND_NAME,
-            editorCallback: (editor: Editor, _: MarkdownView) => {
-                new PromptModal(this, editor, "selection").open();
+            id: "settings-change-llm-model",
+            name: SETTINGS_CHANGE_LLM_MODEL_COMMAND_NAME,
+            callback: () => {
+                new ModelModal(this).open();
             },
         });
 
         this.addCommand({
-            id: "prompt-generate-content-at-cursor",
-            name: CURSOR_COMMAND_NAME,
-            editorCallback: (editor: Editor, _: MarkdownView) => {
-                new PromptModal(this, editor, "cursor").open();
+            id: "settings-toggle-llm-streaming",
+            name: SETTINGS_TOGGLE_STREAMING_COMMAND_NAME,
+            callback: async () => { 
+                this.settings.streaming = !this.settings.streaming;
+                await this.saveSettings();
+                new Notice(`Streaming LLM responses is now ${this.settings.streaming ? "enabled" : "disabled"}`)
             },
         });
 
         this.addCommand({
-            id: "prompt-rewrite-document",
-            name: DOC_COMMAND_NAME,
-            editorCallback: (editor: Editor, _: MarkdownView) => {
-                new PromptModal(this, editor, "document").open();
+            id: "settings-toggle-recent-prompts",
+            name: SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME,
+            callback: async () => { 
+                this.settings.recentPromptsEnabled = !this.settings.recentPromptsEnabled;
+                await this.saveSettings();
+                new Notice(`Recent prompts are now ${this.settings.recentPromptsEnabled ? "enabled" : "disabled"}`)
             },
         });
+
+        for (const command of PROMPT_COMMANDS) {
+            this.addCommand({
+                id: command.id,
+                name: command.name,
+                editorCallback: (editor: Editor, _: MarkdownView) => {
+                    new PromptModal(this, editor, command.type).open();
+                },
+            });
+        }
 
         this.addSettingTab(new SimplePromptSettingTab(this.app, this));
     }

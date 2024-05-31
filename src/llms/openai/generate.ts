@@ -1,7 +1,6 @@
 import { Notice } from "obsidian";
 import OpenAI from "openai";
-import { Stream } from "openai/streaming";
-import { SimplePromptPluginSettings } from "src/types";
+import { LlmStreamingResponseFn, SimplePromptPluginSettings } from "src/types";
 
 export async function generate(
     settings: SimplePromptPluginSettings,
@@ -32,9 +31,9 @@ export async function generate(
 export async function generateStreaming(
     settings: SimplePromptPluginSettings,
     prompt: string,
-    onSuccess: (
-        stream: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
-    ) => void
+    onChunk: LlmStreamingResponseFn,
+    onStart?: () => void,
+    onEnd?: () => void
 ) {
     const openai = new OpenAI({
         apiKey: settings.apiKey ?? "",
@@ -53,6 +52,14 @@ export async function generateStreaming(
             return null;
         });
     if (stream) {
-        onSuccess(stream);
+        if (onStart) {
+            onStart();
+        }
+        for await (const chunk of stream) {
+            onChunk(chunk.choices[0].delta.content ?? "");
+        }
+        if (onEnd) {
+            onEnd();
+        }
     }
 }

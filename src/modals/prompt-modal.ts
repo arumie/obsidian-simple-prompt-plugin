@@ -1,26 +1,24 @@
-import { Editor, Modal, Notice } from "obsidian";
-import OpenAI from "openai";
-import { Stream } from "openai/streaming";
-import {
-    generate,
-    generateStreaming
-} from "src/llms/openai/generate";
+import { Editor, Modal, Notice, Setting } from "obsidian";
+import { generate, generateStreaming } from "src/llms/openai/generate";
 import SimplePromptPlugin from "src/main";
 import {
     CURSOR_COMMAND_NAME,
+    CURSOR_COMMAND_SUBTITLE,
     DOC_COMMAND_NAME,
+    DOC_COMMAND_SUBTITLE,
     SELECTION_COMMAND_NAME,
+    SELECTION_COMMAND_SUBTITLE,
 } from "../constants";
-import { CommandTypes } from "../types";
+import { CommandType } from "../types";
 
 export default class PromptModal extends Modal {
     editor: Editor;
     plugin: SimplePromptPlugin;
-    type: CommandTypes;
+    type: CommandType;
     constructor(
         plugin: SimplePromptPlugin,
         editor: Editor,
-        type?: CommandTypes
+        type?: CommandType
     ) {
         super(plugin.app);
         this.editor = editor;
@@ -32,18 +30,30 @@ export default class PromptModal extends Modal {
         const { contentEl, modalEl } = this;
         modalEl.addClasses(["pr-w-1/2"]);
         const wrapper = contentEl.createEl("div");
-        wrapper.addClasses([
-            "pr-flex",
-            "pr-flex-col",
-            "pr-p-5",
-            "pr-gap-5",
-            "pr-justify-center",
-            "pr-items-center",
+        wrapper.addClasses(["pr-flex", "pr-flex-col", "pr-p-5"]);
+
+        const title = wrapper.createEl("span", { text: this.getTitle() });
+        title.addClasses(["pr-text-lg", "pr-font-semibold"]);
+
+        const subtitle = wrapper.createEl("span", { text: this.getSubtitle() });
+        subtitle.addClasses([
+            "pr-text-sm",
+            "pr-font-normal",
+            "pr-mb-10",
+            "pr-opacity-50",
         ]);
 
         const { textarea } = this.buildPromptFields(wrapper);
 
         const button = wrapper.createEl("button", { text: "Generate!" });
+        button.addClasses([
+            "!pr-bg-emerald-600",
+            "pr-text-white",
+            "hover:!pr-bg-emerald-700",
+            "pr-mt-5",
+            "pr-font-semibold",
+            "pr-text-base",
+        ]);
         button.addEventListener("click", async () => {
             if (textarea.value === "") {
                 new Notice("Please enter a prompt");
@@ -90,18 +100,28 @@ export default class PromptModal extends Modal {
         }
     }
 
+    private getSubtitle(): string | DocumentFragment | undefined {
+        switch (this.type) {
+            case "cursor":
+                return CURSOR_COMMAND_SUBTITLE;
+            case "selection":
+                return SELECTION_COMMAND_SUBTITLE;
+            case "document":
+                return DOC_COMMAND_SUBTITLE;
+            default:
+                return "Generate content";
+        }
+    }
+
     private buildPromptFields(wrapper: HTMLDivElement): {
         textarea: HTMLTextAreaElement;
     } {
-        const title = wrapper.createEl("h3", { text: this.getTitle() });
-        title.addClasses(["pr-text-lg", "pr-font-semibold", "pr-mb-5"]);
-
         const promptWrapper = wrapper.createEl("div");
         promptWrapper.addClasses([
             "pr-w-full",
             "pr-flex",
-            "pr-flex-row",
             "pr-gap-5",
+            "pr-mb-5",
         ]);
 
         const textarea = promptWrapper.createEl("textarea", {
@@ -120,49 +140,51 @@ export default class PromptModal extends Modal {
         ]);
 
         textarea.focus();
-
         const recentPrompts = this.plugin.settings.recentPrompts;
-        if (recentPrompts.length === 0) {
+        if (
+            recentPrompts.length === 0 ||
+            !this.plugin.settings.recentPromptsEnabled
+        ) {
             return { textarea };
         }
-        const recentPromptsList = promptWrapper.createEl("ul");
-        recentPromptsList.addClasses([
-            "pr-pl-5",
-            "pr-border-0",
-            "pr-border-l",
-            "pr-border-solid",
-            "pr-border-slate-200",
-            "pr-m-0",
-            "pr-list-none",
-        ]);
-        recentPromptsList
-            .createEl("li", { text: "Recent prompts" })
-            .addClasses(["pr-font-semibold", "pr-mb-2"]);
-        for (const prompt of recentPrompts) {
-            const li = recentPromptsList.createEl("li");
-            li.ariaLabel = prompt;
-            li.addClasses([
-                "pr-cursor-pointer",
-                "pr-p-2",
-                "pr-border",
-                "pr-border-solid",
-                "pr-my-1",
-                "pr-rounded-md",
-                "pr-min-w-40",
-                "pr-border-slate-200",
-                "hover:pr-bg-slate-100",
-            ]);
-            const p = li.createEl("p", { text: prompt });
-            p.addClasses([
-                "pr-line-clamp-1",
-                "pr-m-0",
-                "pr-text-xs",
-                "text-slate-500",
-            ]);
-            li.addEventListener("click", () => {
-                textarea.value = prompt;
+
+        const recentPromptSelector = new Setting(wrapper)
+            .setDesc("Recent prompts")
+            .addDropdown((dropdown) => {
+                let i = 0;
+                for (const prompt of this.plugin.settings.recentPrompts) {
+                    dropdown.addOption(
+                        `${i}`,
+                        `${
+                            prompt.length > 50
+                                ? prompt.substring(0, 50) + "...  "
+                                : prompt
+                        }`
+                    );
+                    const option = dropdown.selectEl.options[i];
+                    option.addClasses(["pr-text-xs"]);
+                    option.ariaLabel = prompt;
+                    i++;
+                }
+                dropdown.selectEl.addClasses(["!pr-w-40"]);
+                dropdown.setValue("");
+                dropdown.onChange(async (value) => {
+                    dropdown.setValue("");
+                    textarea.value =
+                        this.plugin.settings.recentPrompts[parseInt(value)];
+                });
             });
-        }
+        recentPromptSelector.descEl.addClasses([
+            "pr-text-base",
+            "pr-font-semibold",
+        ]);
+        recentPromptSelector.settingEl.addClasses([
+            "pr-py-5",
+            "pr-border-0",
+            "pr-border-y",
+            "pr-border-solid",
+            "pr-border-y-slate-200",
+        ]);
         return { textarea };
     }
 
@@ -172,12 +194,21 @@ export default class PromptModal extends Modal {
             .replace("<REQUEST>", `${textarea.value}`);
 
         if (this.plugin.settings.streaming) {
-            await generateStreaming(this.plugin.settings, prompt, (stream) => {
+            const onStart = () => {
                 this.editor.setValue("");
                 this.close();
-                this.handleStream(stream);
+            };
+            const onEnd = () => {
                 this.saveRecentPrompt(textarea);
-            });
+                new Notice("Action complete!");
+            };
+            await generateStreaming(
+                this.plugin.settings,
+                prompt,
+                (chunk) => this.handleChunk(chunk),
+                onStart,
+                onEnd
+            );
         } else {
             await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.setValue(result);
@@ -193,11 +224,20 @@ export default class PromptModal extends Modal {
         );
 
         if (this.plugin.settings.streaming) {
-            await generateStreaming(this.plugin.settings, prompt, (stream) => {
+            const onStart = () => {
                 this.close();
-                this.handleStream(stream);
+            };
+            const onEnd = () => {
                 this.saveRecentPrompt(textarea);
-            });
+                new Notice("Action complete!");
+            };
+            await generateStreaming(
+                this.plugin.settings,
+                prompt,
+                (chunk) => this.handleChunk(chunk),
+                onStart,
+                onEnd
+            );
         } else {
             await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.replaceRange(
@@ -214,12 +254,21 @@ export default class PromptModal extends Modal {
             .replace("<SELECTION>", `${this.editor.getSelection()}`)
             .replace("<REQUEST>", `${textarea.value}`);
         if (this.plugin.settings.streaming) {
-            await generateStreaming(this.plugin.settings, prompt, (stream) => {
+            const onStart = () => {
                 this.editor.replaceSelection("");
                 this.close();
-                this.handleStream(stream);
+            };
+            const onEnd = () => {
                 this.saveRecentPrompt(textarea);
-            });
+                new Notice("Action complete!");
+            };
+            await generateStreaming(
+                this.plugin.settings,
+                prompt,
+                (chunk) => this.handleChunk(chunk),
+                onStart,
+                onEnd
+            );
         } else {
             await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.replaceSelection(result);
@@ -228,19 +277,10 @@ export default class PromptModal extends Modal {
         }
     }
 
-    private async handleStream(
-        stream: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
-    ) {
-        for await (const chunk of stream) {
-            const cursorPos = this.editor.getCursor();
-            const textChunk = chunk.choices[0].delta.content ?? "";
-            this.editor.replaceRange(textChunk, cursorPos, cursorPos);
-            this.editor.setCursor(
-                cursorPos.line,
-                cursorPos.ch + textChunk.length
-            );
-        }
-        new Notice("Action complete!");
+    private handleChunk(chunk: string) {
+        const cursorPos = this.editor.getCursor();
+        this.editor.replaceRange(chunk, cursorPos, cursorPos);
+        this.editor.setCursor(cursorPos.line, cursorPos.ch + chunk.length);
     }
 
     private saveRecentPrompt(textarea: HTMLTextAreaElement) {
