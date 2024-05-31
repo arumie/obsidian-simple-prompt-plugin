@@ -1,10 +1,10 @@
-import { App, Modal, Notice } from "obsidian";
+import { Modal, Notice } from "obsidian";
 import SimplePromptPlugin from "src/main";
 
 export default class ApiKeyModal extends Modal {
     plugin: SimplePromptPlugin;
-    constructor(app: App, plugin: SimplePromptPlugin) {
-        super(app);
+    constructor(plugin: SimplePromptPlugin) {
+        super(plugin.app);
         this.plugin = plugin;
     }
 
@@ -21,7 +21,7 @@ export default class ApiKeyModal extends Modal {
         ]);
 
         const title = wrapper.createEl("h3", {
-            text: "Create and input your API key",
+            text: "Set API key for Simple Prompt",
         });
         title.addClasses(["pr-text-lg", "pr-font-semibold", "pr-mb-5"]);
 

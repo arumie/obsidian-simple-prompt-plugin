@@ -15,6 +15,7 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^20.12.12",
+		"@types/tough-cookie": "^4.0.5",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
 		"builtin-modules": "3.3.0",
@@ -26,6 +27,7 @@
 	},
 	"dependencies": {
 		"autoprefixer": "^10.4.14",
+		"fs": "^0.0.1-security",
 		"openai": "^4.47.1",
 		"postcss-cli": "^10.1.0",
 		"postcss-import": "^15.1.0",

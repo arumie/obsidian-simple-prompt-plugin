@@ -100,14 +100,14 @@ Request:
 ==================
 Answer:`
 
+
 // COMMANDS
+export const SETTINGS_SET_API_KEY_COMMAND_NAME = "Set API key";
 export const SELECTION_COMMAND_NAME = "Rewrite selection";
 export const DOC_COMMAND_NAME = "Rewrite document";
 export const CURSOR_COMMAND_NAME = "Generate content at cursor";
 
 // SETTINGS
-
-
 export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
     apiKey: null,
     model: "gpt-3.5-turbo",

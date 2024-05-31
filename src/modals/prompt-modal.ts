@@ -1,12 +1,17 @@
 import { Editor, Modal, Notice } from "obsidian";
+import OpenAI from "openai";
+import { Stream } from "openai/streaming";
+import {
+    generate,
+    generateStreaming
+} from "src/llms/openai/generate";
+import SimplePromptPlugin from "src/main";
 import {
     CURSOR_COMMAND_NAME,
     DOC_COMMAND_NAME,
     SELECTION_COMMAND_NAME,
 } from "../constants";
 import { CommandTypes } from "../types";
-import SimplePromptPlugin from "src/main";
-import OpenAI from "openai";
 
 export default class PromptModal extends Modal {
     editor: Editor;
@@ -62,11 +67,7 @@ export default class PromptModal extends Modal {
             this.close();
         });
 
-        button.addClasses([
-            "pr-p-5",
-            "pr-rounded-md",
-            "pr-cursor-pointer",
-        ]);
+        button.addClasses(["pr-p-5", "pr-rounded-md", "pr-cursor-pointer"]);
 
         textarea.addEventListener("keydown", (e: KeyboardEvent) => {
             if (e.key === "Enter" && e.ctrlKey) {
@@ -171,12 +172,16 @@ export default class PromptModal extends Modal {
             .replace("<REQUEST>", `${textarea.value}`);
 
         if (this.plugin.settings.streaming) {
-            await this.generateStreaming(textarea, prompt, () => {
+            await generateStreaming(this.plugin.settings, prompt, (stream) => {
                 this.editor.setValue("");
+                this.close();
+                this.handleStream(stream);
+                this.saveRecentPrompt(textarea);
             });
         } else {
-            await this.generate(textarea, prompt, (result) => {
+            await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.setValue(result);
+                this.saveRecentPrompt(textarea);
             });
         }
     }
@@ -188,9 +193,13 @@ export default class PromptModal extends Modal {
         );
 
         if (this.plugin.settings.streaming) {
-            await this.generateStreaming(textarea, prompt);
+            await generateStreaming(this.plugin.settings, prompt, (stream) => {
+                this.close();
+                this.handleStream(stream);
+                this.saveRecentPrompt(textarea);
+            });
         } else {
-            await this.generate(textarea, prompt, (result) => {
+            await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.replaceRange(
                     result,
                     this.editor.getCursor(),
@@ -205,80 +214,33 @@ export default class PromptModal extends Modal {
             .replace("<SELECTION>", `${this.editor.getSelection()}`)
             .replace("<REQUEST>", `${textarea.value}`);
         if (this.plugin.settings.streaming) {
-            await this.generateStreaming(textarea, prompt, () => {
+            await generateStreaming(this.plugin.settings, prompt, (stream) => {
                 this.editor.replaceSelection("");
+                this.close();
+                this.handleStream(stream);
+                this.saveRecentPrompt(textarea);
             });
         } else {
-            await this.generate(textarea, prompt, (result) => {
+            await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.replaceSelection(result);
+                this.saveRecentPrompt(textarea);
             });
         }
     }
 
-    private async generate(
-        textarea: HTMLTextAreaElement,
-        prompt: string,
-        fn: (result: string) => void
+    private async handleStream(
+        stream: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
     ) {
-        const openai = new OpenAI({
-            apiKey: this.plugin.settings.apiKey ?? "",
-            dangerouslyAllowBrowser: true,
-        });
-
-        await openai.chat.completions
-            .create({
-                model: this.plugin.settings.model,
-                messages: [{ role: "user", content: prompt }],
-            })
-            .then((response) => {
-                if (response.choices[0].message.content) {
-                    this.saveRecentPrompt(textarea);
-                    fn(response.choices[0].message.content);
-                }
-            })
-            .catch((e) => {
-                console.error(e);
-                new Notice(`Error generating content: ${e}`);
-            });
-    }
-
-    private async generateStreaming(
-        textarea: HTMLTextAreaElement,
-        prompt: string,
-        onSuccess?: () => void
-    ) {
-        const openai = new OpenAI({
-            apiKey: this.plugin.settings.apiKey ?? "",
-            dangerouslyAllowBrowser: true,
-        });
-
-        const stream = await openai.chat.completions
-            .create({
-                model: this.plugin.settings.model,
-                messages: [{ role: "user", content: prompt }],
-                stream: true,
-            })
-            .catch((e) => {
-                console.error(e);
-                new Notice(`Error generating content: ${e}`);
-                return null;
-            });
-        if (stream) {
-            this.close();
-            if (onSuccess) onSuccess();
-            for await (const chunk of stream) {
-                const cursorPos = this.editor.getCursor();
-                const textChunk = chunk.choices[0].delta.content ?? ""
-                this.editor.replaceRange(
-                    textChunk,
-                    cursorPos,
-                    cursorPos
-                );
-                this.editor.setCursor(cursorPos.line, cursorPos.ch + textChunk.length);
-            }
-            new Notice("Action complete!");
-            this.saveRecentPrompt(textarea);
+        for await (const chunk of stream) {
+            const cursorPos = this.editor.getCursor();
+            const textChunk = chunk.choices[0].delta.content ?? "";
+            this.editor.replaceRange(textChunk, cursorPos, cursorPos);
+            this.editor.setCursor(
+                cursorPos.line,
+                cursorPos.ch + textChunk.length
+            );
         }
+        new Notice("Action complete!");
     }
 
     private saveRecentPrompt(textarea: HTMLTextAreaElement) {

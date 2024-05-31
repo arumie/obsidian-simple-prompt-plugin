@@ -47,7 +47,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
             btn.setIcon("key")
                 .setTooltip("Set API key")
                 .onClick(async () => {
-                    new ApiKeyModal(this.app, this.plugin).open();
+                    new ApiKeyModal(this.plugin).open();
                 });
             return btn;
         });

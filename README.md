@@ -28,6 +28,7 @@ It also gives the following options:
 - Add "**Generate content som YouTube link**" command to generate content based on a YouTube link.
 - Add support for **indexing all documents in the vault** and generating content based on the index.
 - Add encryption for the saved API key.
+- Add support for adding custom actions and templates
 
 ## How to use
 
