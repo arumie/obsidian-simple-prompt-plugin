@@ -61,6 +61,7 @@ export default class PromptModal extends Modal {
             }
             wrapper.innerHTML = "";
             const loader = wrapper.createEl("span");
+            wrapper.addClasses(["pr-flex", "pr-flex-col", "pr-items-center"]);
             loader.addClasses(["loading", "dots", "pr-text-xl"]);
             switch (this.type) {
                 case "document":
@@ -166,7 +167,6 @@ export default class PromptModal extends Modal {
                     option.ariaLabel = prompt;
                     i++;
                 }
-                dropdown.selectEl.addClasses(["!pr-w-40"]);
                 dropdown.setValue("");
                 dropdown.onChange(async (value) => {
                     dropdown.setValue("");
