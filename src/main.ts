@@ -27,7 +27,7 @@ export default class SimplePromptPlugin extends Plugin {
         await this.loadSettings();
         if (!this.settings.apiKey) {
             new Notice(
-                "[Simple Prompt Plugin] Please enter your API key in the settings or with the command 'Set API key'"
+                "[Simple Prompt] Please enter your API key in the settings or with the command 'Set API key'"
             );
         }
 
@@ -67,12 +67,12 @@ export default class SimplePromptPlugin extends Plugin {
             },
         });
 
-        for (const command of PROMPT_COMMANDS) {
+        for (const c of PROMPT_COMMANDS) {
             this.addCommand({
-                id: command.id,
-                name: command.name,
+                id: c.id,
+                name: c.name,
                 editorCallback: (editor: Editor, _: MarkdownView) => {
-                    new PromptModal(this, editor, command.type).open();
+                    new PromptModal(this, editor, c.type).open();
                 },
             });
         }

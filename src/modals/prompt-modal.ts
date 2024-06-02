@@ -59,7 +59,7 @@ export default class PromptModal extends Modal {
                 new Notice("Please enter a prompt");
                 return;
             }
-            wrapper.innerHTML = "";
+            wrapper.empty();
             const loader = wrapper.createEl("span");
             wrapper.addClasses(["pr-flex", "pr-flex-col", "pr-items-center"]);
             loader.addClasses(["loading", "dots", "pr-text-xl"]);

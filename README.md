@@ -1,10 +1,10 @@
-# Simple Prompt Plugin
+# Simple Prompt
 
 This is a plugin for Obsidian (https://obsidian.md).
 
-## What is Simple Prompt Plugin?
+## What is Simple Prompt?
 
-Simple Prompt Plugin is a plugin for Obsidian that allows you generate content in your notes using LLMs.
+Simple Prompt is a plugin for Obsidian that allows you generate content in your notes using LLMs.
 
 The commands open a modal that allows you to write a query and generate content based on the query.
 
@@ -47,11 +47,4 @@ It also gives the following options:
 
 ## Demo
 
-### Rewrite document with prompt
-
 ![Demo](./assets/SimplePromptDocument.gif)
-
-### Streaming, recent prompts, and generating content at cursor
-
-
-![Demo](./assets/SimplePromptDocument2.gif)
