@@ -47,4 +47,4 @@ It also gives the following options:
 
 ## Demo
 
-![Demo](./assets/SimplePromptDocument.gif)
+![Demo](./assets/SimplePromptDocument3.gif)
