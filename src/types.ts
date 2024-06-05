@@ -1,8 +1,6 @@
-
-
 export type OpenAIModelType = "gpt-3.5-turbo" | "gpt-4-turbo" | "gpt-4o";
 
-export type CommandType = "selection" | "cursor" | "document";
+export type CommandType = "selection" | "cursor" | "document" | "youtube";
 
 export interface SimplePromptPluginSettings {
     apiKey: string | null;

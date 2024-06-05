@@ -13,6 +13,7 @@ It provides the following commands:
 - **Generate content at your cursor**: This command will generate content at the cursor position.
 - **Rewrite selection**: This command will replace the selected text with the generated content.
 - **Rewrite document**: This command will replace the entire document with the generated content.
+- **Generate from YouTube**: This command will generate content based on a YouTube video URL and a request at the cursor position. **OBS**, this command uses the transcription of the video to generate content, so if the video is not transcribed or doesn't have sound, it will not work.
 
 It also gives the following options:
 
@@ -25,7 +26,6 @@ It also gives the following options:
 
 - Add support for other LLMs (Anthropic Claude, Cohere Aya, Ollama, Llama-files etc.)
 - Add "**Generate image**" command to generate images using LLMs.
-- Add "**Generate content som YouTube link**" command to generate content based on a YouTube link.
 - Add support for **indexing all documents in the vault** and generating content based on the index.
 - Add encryption for the saved API key.
 - Add support for adding custom actions and templates
@@ -48,3 +48,7 @@ It also gives the following options:
 ## Demo
 
 ![Demo](./assets/SimplePromptDocument3.gif)
+
+### YouTube Link Demo
+
+![YouTubeDemo](./assets/YouTubeDemo.gif)

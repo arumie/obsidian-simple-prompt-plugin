@@ -5,7 +5,7 @@ import { LlmStreamingResponseFn, SimplePromptPluginSettings } from "src/types";
 export async function generate(
     settings: SimplePromptPluginSettings,
     prompt: string,
-    onSuccess: (result: string) => void
+    onSuccess: (result: string) => void,
 ) {
     const openai = new OpenAI({
         apiKey: settings.apiKey ?? "",
@@ -33,7 +33,7 @@ export async function generateStreaming(
     prompt: string,
     onChunk: LlmStreamingResponseFn,
     onStart?: () => void,
-    onEnd?: () => void
+    onEnd?: () => void,
 ) {
     const openai = new OpenAI({
         apiKey: settings.apiKey ?? "",

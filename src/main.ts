@@ -2,7 +2,8 @@ import {
     Editor,
     MarkdownView,
     Notice,
-    Plugin
+    Plugin,
+    editorEditorField,
 } from "obsidian";
 import {
     DEFAULT_SETTINGS,
@@ -10,15 +11,18 @@ import {
     SETTINGS_CHANGE_LLM_MODEL_COMMAND_NAME,
     SETTINGS_SET_API_KEY_COMMAND_NAME,
     SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME,
-    SETTINGS_TOGGLE_STREAMING_COMMAND_NAME
+    SETTINGS_TOGGLE_STREAMING_COMMAND_NAME,
 } from "./constants";
 import ApiKeyModal from "./modals/api-key-modal";
 import ModelModal from "./modals/model-modal";
 import PromptModal from "./modals/prompt-modal";
 import SimplePromptSettingTab from "./settings";
+import { SimplePromptPluginSettings } from "./types";
 import {
-    SimplePromptPluginSettings
-} from "./types";
+    TranscriptResponse,
+    VideoResponse,
+    YoutubeTranscript,
+} from "./youtube-transcript";
 
 export default class SimplePromptPlugin extends Plugin {
     settings: SimplePromptPluginSettings;
@@ -27,9 +31,33 @@ export default class SimplePromptPlugin extends Plugin {
         await this.loadSettings();
         if (!this.settings.apiKey) {
             new Notice(
-                "[Simple Prompt] Please enter your API key in the settings or with the command 'Set API key'"
+                "[Simple Prompt] Please enter your API key in the settings or with the command 'Set API key'",
             );
         }
+
+        this.addCommand({
+            id: "test",
+            name: "Test",
+            editorCallback: async (editor: Editor, _: MarkdownView) => {
+                try {
+                    new Notice("Transcript is being fetched");
+                    const videoData: VideoResponse =
+                        await YoutubeTranscript.fetchVideoData(
+                            "https://www.youtube.com/watch?v=i0_C3eRTbgg&t=2s&ab_channel=TheeBurgerDude",
+                            { lang: "en" },
+                        );
+                    console.log(videoData);
+                    const text = videoData.transcript
+                        .map((t) => t.text)
+                        .join(" ");
+                    new Notice("Transcript fetched");
+                    editor.setValue(text);
+                } catch (e) {
+                    console.error(e);
+                    new Notice("Error fetching transcript: ", e);
+                }
+            },
+        });
 
         this.addCommand({
             id: "settings-set-api-key",
@@ -50,20 +78,31 @@ export default class SimplePromptPlugin extends Plugin {
         this.addCommand({
             id: "settings-toggle-llm-streaming",
             name: SETTINGS_TOGGLE_STREAMING_COMMAND_NAME,
-            callback: async () => { 
+            callback: async () => {
                 this.settings.streaming = !this.settings.streaming;
                 await this.saveSettings();
-                new Notice(`Streaming LLM responses is now ${this.settings.streaming ? "enabled" : "disabled"}`)
+                new Notice(
+                    `Streaming LLM responses is now ${
+                        this.settings.streaming ? "enabled" : "disabled"
+                    }`,
+                );
             },
         });
 
         this.addCommand({
             id: "settings-toggle-recent-prompts",
             name: SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME,
-            callback: async () => { 
-                this.settings.recentPromptsEnabled = !this.settings.recentPromptsEnabled;
+            callback: async () => {
+                this.settings.recentPromptsEnabled =
+                    !this.settings.recentPromptsEnabled;
                 await this.saveSettings();
-                new Notice(`Recent prompts are now ${this.settings.recentPromptsEnabled ? "enabled" : "disabled"}`)
+                new Notice(
+                    `Recent prompts are now ${
+                        this.settings.recentPromptsEnabled
+                            ? "enabled"
+                            : "disabled"
+                    }`,
+                );
             },
         });
 
@@ -86,7 +125,7 @@ export default class SimplePromptPlugin extends Plugin {
         this.settings = Object.assign(
             {},
             DEFAULT_SETTINGS,
-            await this.loadData()
+            await this.loadData(),
         );
     }
 

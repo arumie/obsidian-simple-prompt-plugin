@@ -8,8 +8,11 @@ import {
     DOC_COMMAND_SUBTITLE,
     SELECTION_COMMAND_NAME,
     SELECTION_COMMAND_SUBTITLE,
+    YT_TRANSCRIPT_COMMAND_NAME,
+    YT_TRANSCRIPT_COMMAND_SUBTITLE,
 } from "../constants";
 import { CommandType } from "../types";
+import { VideoResponse, YoutubeTranscript } from "src/youtube-transcript";
 
 export default class PromptModal extends Modal {
     editor: Editor;
@@ -18,7 +21,7 @@ export default class PromptModal extends Modal {
     constructor(
         plugin: SimplePromptPlugin,
         editor: Editor,
-        type?: CommandType
+        type?: CommandType,
     ) {
         super(plugin.app);
         this.editor = editor;
@@ -43,7 +46,29 @@ export default class PromptModal extends Modal {
             "pr-opacity-50",
         ]);
 
+        let ytLinkInput: HTMLInputElement | null = null;
+        if (this.type === "youtube") {
+            ytLinkInput = wrapper.createEl("input", {
+                type: "text",
+                placeholder: "YouTube link",
+            });
+
+            ytLinkInput.addClasses([
+                "pr-p-2",
+                "pr-border",
+                "pr-rounded-md",
+                "pr-w-full",
+                "pr-mb-5",
+            ]);
+        }
+
         const { textarea } = this.buildPromptFields(wrapper);
+
+        if (ytLinkInput != null) {
+            ytLinkInput.focus();
+        } else {
+            textarea.focus();
+        }
 
         const button = wrapper.createEl("button", { text: "Generate!" });
         button.addClasses([
@@ -73,6 +98,10 @@ export default class PromptModal extends Modal {
                 case "selection":
                     await this.generateForSelection(textarea);
                     break;
+                case "youtube":
+                    if (ytLinkInput != null) {
+                        await this.generateForYoutube(textarea, ytLinkInput);
+                    }
             }
 
             this.close();
@@ -96,6 +125,8 @@ export default class PromptModal extends Modal {
                 return SELECTION_COMMAND_NAME;
             case "document":
                 return DOC_COMMAND_NAME;
+            case "youtube":
+                return YT_TRANSCRIPT_COMMAND_NAME;
             default:
                 return "Generate content";
         }
@@ -109,6 +140,8 @@ export default class PromptModal extends Modal {
                 return SELECTION_COMMAND_SUBTITLE;
             case "document":
                 return DOC_COMMAND_SUBTITLE;
+            case "youtube":
+                return YT_TRANSCRIPT_COMMAND_SUBTITLE;
             default:
                 return "Generate content";
         }
@@ -139,8 +172,6 @@ export default class PromptModal extends Modal {
             "pr-resize-none",
             "pr-text-base",
         ]);
-
-        textarea.focus();
         const recentPrompts = this.plugin.settings.recentPrompts;
         if (
             recentPrompts.length === 0 ||
@@ -160,7 +191,7 @@ export default class PromptModal extends Modal {
                             prompt.length > 50
                                 ? prompt.substring(0, 50) + "...  "
                                 : prompt
-                        }`
+                        }`,
                     );
                     const option = dropdown.selectEl.options[i];
                     option.addClasses(["pr-text-xs"]);
@@ -207,7 +238,7 @@ export default class PromptModal extends Modal {
                 prompt,
                 (chunk) => this.handleChunk(chunk),
                 onStart,
-                onEnd
+                onEnd,
             );
         } else {
             await generate(this.plugin.settings, prompt, (result) => {
@@ -220,35 +251,11 @@ export default class PromptModal extends Modal {
     private async generateAtCursor(textarea: HTMLTextAreaElement) {
         const prompt = this.plugin.settings.promptTemplates.cursor.replace(
             "<QUERY>",
-            `${textarea.value}`
+            `${textarea.value}`,
         );
 
-        if (this.plugin.settings.streaming) {
-            const onStart = () => {
-                this.close();
-            };
-            const onEnd = () => {
-                this.saveRecentPrompt(textarea);
-                new Notice("Action complete!");
-            };
-            await generateStreaming(
-                this.plugin.settings,
-                prompt,
-                (chunk) => this.handleChunk(chunk),
-                onStart,
-                onEnd
-            );
-        } else {
-            await generate(this.plugin.settings, prompt, (result) => {
-                this.editor.replaceRange(
-                    result,
-                    this.editor.getCursor(),
-                    this.editor.getCursor()
-                );
-            });
-        }
+        await this.generateAtCursorWithPrompt(textarea, prompt);
     }
-
     private async generateForSelection(textarea: HTMLTextAreaElement) {
         const prompt = this.plugin.settings.promptTemplates.selection
             .replace("<SELECTION>", `${this.editor.getSelection()}`)
@@ -267,12 +274,73 @@ export default class PromptModal extends Modal {
                 prompt,
                 (chunk) => this.handleChunk(chunk),
                 onStart,
-                onEnd
+                onEnd,
             );
         } else {
             await generate(this.plugin.settings, prompt, (result) => {
                 this.editor.replaceSelection(result);
                 this.saveRecentPrompt(textarea);
+            });
+        }
+    }
+
+    private async generateForYoutube(
+        textarea: HTMLTextAreaElement,
+        input: HTMLInputElement,
+    ) {
+        const link = input.value;
+        new Notice("Fetching transcript from YouTube");
+        let videoData: VideoResponse;
+
+        try {
+            videoData = await YoutubeTranscript.fetchVideoData(link, {
+                lang: "en",
+            });
+        } catch (e) {
+            console.error(e);
+            new Notice(`Error fetching transcript: ${e}`);
+            return;
+        }
+
+        const prompt = this.plugin.settings.promptTemplates.youtube
+            .replace("<TITLE>", videoData.videoDetails.title)
+            .replace("<AUTHOR>", videoData.videoDetails.author)
+            .replace("<KEYWORDS>", videoData.videoDetails.keywords.join(", "))
+            .replace(
+                "<TRANSCRIPT>",
+                videoData.transcript.map((t) => t.text).join(" "),
+            )
+            .replace("<REQUEST>", `${textarea.value}`);
+
+        await this.generateAtCursorWithPrompt(textarea, prompt);
+    }
+
+    private async generateAtCursorWithPrompt(
+        textarea: HTMLTextAreaElement,
+        prompt: string,
+    ) {
+        if (this.plugin.settings.streaming) {
+            const onStart = () => {
+                this.close();
+            };
+            const onEnd = () => {
+                this.saveRecentPrompt(textarea);
+                new Notice("Action complete!");
+            };
+            await generateStreaming(
+                this.plugin.settings,
+                prompt,
+                (chunk) => this.handleChunk(chunk),
+                onStart,
+                onEnd,
+            );
+        } else {
+            await generate(this.plugin.settings, prompt, (result) => {
+                this.editor.replaceRange(
+                    result,
+                    this.editor.getCursor(),
+                    this.editor.getCursor(),
+                );
             });
         }
     }
@@ -287,14 +355,14 @@ export default class PromptModal extends Modal {
         if (textarea.value !== "") {
             if (!this.plugin.settings.recentPrompts.includes(textarea.value)) {
                 const newLength = this.plugin.settings.recentPrompts.unshift(
-                    textarea.value
+                    textarea.value,
                 );
                 if (newLength > this.plugin.settings.recentsLimit) {
                     this.plugin.settings.recentPrompts.pop();
                 }
             } else {
                 const index = this.plugin.settings.recentPrompts.indexOf(
-                    textarea.value
+                    textarea.value,
                 );
                 this.plugin.settings.recentPrompts.splice(index, 1);
                 this.plugin.settings.recentPrompts.unshift(textarea.value);

@@ -57,7 +57,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                     .onChange(async (value: OpenAIModelType) => {
                         this.plugin.settings.model = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
 
         new Setting(containerEl)
@@ -69,7 +69,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.streaming = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
 
         new Setting(containerEl).setHeading().setName("Recent Prompts");
@@ -86,7 +86,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         this.plugin.settings.recentPrompts =
                             this.plugin.settings.recentPrompts.slice(0, value);
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
         new Setting(containerEl)
             .setName("Enable/Disable")
@@ -97,7 +97,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.recentPromptsEnabled = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
 
         let currentTemplate: CommandType = "selection";
@@ -120,10 +120,10 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         if (promptTemplateTextArea != null) {
                             promptTemplateTextArea.setValue(
                                 this.plugin.settings.promptTemplates[value] ??
-                                    ""
+                                    "",
                             );
                         }
-                    })
+                    }),
             );
 
         new Setting(containerEl)
@@ -135,7 +135,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                     .setIcon("pencil")
                     .onClick(async () => {
                         new TemplateModal(this.plugin, currentTemplate).open();
-                    })
+                    }),
             );
 
         new Setting(containerEl)
@@ -152,7 +152,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                             defaultTemplate;
                         new Notice("Template successfully reset!");
                         this.plugin.saveSettings();
-                    })
+                    }),
             );
     }
 }

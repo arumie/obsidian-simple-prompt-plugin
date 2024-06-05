@@ -45,7 +45,13 @@ export default class TemplateModal extends Modal {
             text: this.plugin.settings.promptTemplates[this.type] ?? "",
         });
 
-        input.addClasses(["pr-p-2", "pr-border", "pr-rounded-md", "pr-w-full", "pr-min-h-56"]);
+        input.addClasses([
+            "pr-p-2",
+            "pr-border",
+            "pr-rounded-md",
+            "pr-w-full",
+            "pr-min-h-56",
+        ]);
 
         const button = wrapper.createEl("button", { text: "Submit" });
         button.addEventListener("click", async () => {

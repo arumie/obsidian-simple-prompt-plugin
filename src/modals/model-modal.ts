@@ -26,7 +26,7 @@ export default class ModelModal extends Modal {
                     .onChange(async (value: OpenAIModelType) => {
                         this.plugin.settings.model = value;
                         await this.plugin.saveSettings();
-                    })
+                    }),
             );
     }
 
