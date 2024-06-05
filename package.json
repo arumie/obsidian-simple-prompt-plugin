@@ -1,6 +1,6 @@
 {
     "name": "obsidian-sample-plugin",
-    "version": "0.4.3",
+    "version": "0.5.0",
     "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
     "main": "main.js",
     "lint-staged": {
@@ -9,7 +9,7 @@
             "prettier --write -u"
         ]
     },
-	"pre-commit": "lint-staged",
+    "pre-commit": "lint-staged",
     "scripts": {
         "lint-staged": "lint-staged",
         "dev": "node esbuild.config.mjs",
