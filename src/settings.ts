@@ -14,7 +14,6 @@ import {
     YT_TRANSCRIPT_COMMAND_NAME,
 } from "./constants";
 import SimplePromptPlugin from "./main";
-import ApiKeyModal from "./modals/api-key-modal";
 import TemplateModal from "./modals/template-modal";
 import { CommandType, OpenAIModelType } from "./types";
 
