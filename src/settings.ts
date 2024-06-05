@@ -10,6 +10,7 @@ import {
     DEFAULT_SETTINGS,
     DOC_COMMAND_NAME,
     SELECTION_COMMAND_NAME,
+    YT_TRANSCRIPT_COMMAND_NAME,
 } from "./constants";
 import SimplePromptPlugin from "./main";
 import ApiKeyModal from "./modals/api-key-modal";
@@ -29,7 +30,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        new Setting(containerEl).setHeading().setName("LLM Settings");
+        new Setting(containerEl).setHeading().setName("Model");
 
         const apiKeySetting = new Setting(containerEl)
             .setName("API key")
@@ -113,6 +114,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         selection: SELECTION_COMMAND_NAME,
                         cursor: CURSOR_COMMAND_NAME,
                         document: DOC_COMMAND_NAME,
+                        youtube: YT_TRANSCRIPT_COMMAND_NAME,
                     })
                     .setValue("selection")
                     .onChange(async (value: CommandType) => {
@@ -139,7 +141,7 @@ class SimplePromptSettingTab extends PluginSettingTab {
             );
 
         new Setting(containerEl)
-            .setName("Restore Default")
+            .setName("Restore default")
             .setDesc("Restore template to default")
             .addButton((button) =>
                 button

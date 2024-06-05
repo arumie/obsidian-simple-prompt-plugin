@@ -1,28 +1,13 @@
-import {
-    Editor,
-    MarkdownView,
-    Notice,
-    Plugin,
-    editorEditorField,
-} from "obsidian";
+import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
 import {
     DEFAULT_SETTINGS,
     PROMPT_COMMANDS,
-    SETTINGS_CHANGE_LLM_MODEL_COMMAND_NAME,
-    SETTINGS_SET_API_KEY_COMMAND_NAME,
     SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME,
     SETTINGS_TOGGLE_STREAMING_COMMAND_NAME,
 } from "./constants";
-import ApiKeyModal from "./modals/api-key-modal";
-import ModelModal from "./modals/model-modal";
 import PromptModal from "./modals/prompt-modal";
 import SimplePromptSettingTab from "./settings";
 import { SimplePromptPluginSettings } from "./types";
-import {
-    TranscriptResponse,
-    VideoResponse,
-    YoutubeTranscript,
-} from "./youtube-transcript";
 
 export default class SimplePromptPlugin extends Plugin {
     settings: SimplePromptPluginSettings;
@@ -34,46 +19,6 @@ export default class SimplePromptPlugin extends Plugin {
                 "[Simple Prompt] Please enter your API key in the settings or with the command 'Set API key'",
             );
         }
-
-        this.addCommand({
-            id: "test",
-            name: "Test",
-            editorCallback: async (editor: Editor, _: MarkdownView) => {
-                try {
-                    new Notice("Transcript is being fetched");
-                    const videoData: VideoResponse =
-                        await YoutubeTranscript.fetchVideoData(
-                            "https://www.youtube.com/watch?v=i0_C3eRTbgg&t=2s&ab_channel=TheeBurgerDude",
-                            { lang: "en" },
-                        );
-                    console.log(videoData);
-                    const text = videoData.transcript
-                        .map((t) => t.text)
-                        .join(" ");
-                    new Notice("Transcript fetched");
-                    editor.setValue(text);
-                } catch (e) {
-                    console.error(e);
-                    new Notice("Error fetching transcript: ", e);
-                }
-            },
-        });
-
-        this.addCommand({
-            id: "settings-set-api-key",
-            name: SETTINGS_SET_API_KEY_COMMAND_NAME,
-            callback: () => {
-                new ApiKeyModal(this).open();
-            },
-        });
-
-        this.addCommand({
-            id: "settings-change-llm-model",
-            name: SETTINGS_CHANGE_LLM_MODEL_COMMAND_NAME,
-            callback: () => {
-                new ModelModal(this).open();
-            },
-        });
 
         this.addCommand({
             id: "settings-toggle-llm-streaming",
@@ -127,6 +72,13 @@ export default class SimplePromptPlugin extends Plugin {
             DEFAULT_SETTINGS,
             await this.loadData(),
         );
+
+        for (const c of PROMPT_COMMANDS) {
+            if (this.settings.promptTemplates[c.type] === undefined) {
+                this.settings.promptTemplates[c.type] =
+                    DEFAULT_SETTINGS.promptTemplates[c.type];
+            }
+        }
     }
 
     async saveSettings() {

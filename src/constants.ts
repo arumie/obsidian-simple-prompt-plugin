@@ -196,8 +196,6 @@ export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
 };
 
 // SETTINGS COMMANDS
-export const SETTINGS_SET_API_KEY_COMMAND_NAME = "Set API key";
-export const SETTINGS_CHANGE_LLM_MODEL_COMMAND_NAME = "Change LLM";
 export const SETTINGS_TOGGLE_STREAMING_COMMAND_NAME = "Toggle streaming";
 export const SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME =
     "Toggle Enable/Disable Recent Prompts";

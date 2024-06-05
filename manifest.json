@@ -2,8 +2,8 @@
 	"id": "simple-prompt",
 	"name": "Simple Prompt",
 	"version": "0.5.1",
-	"minAppVersion": "0.15.0",
-	"description": "Simple prompt plugin for generating content using LLMs",
+	"minAppVersion": "1.15.12",
+	"description": "Simple interface to generate or rewrite content using LLMs based on user input.",
 	"author": "arumie",
 	"authorUrl": "https://github.com/arumie",
 	"isDesktopOnly": false
