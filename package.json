@@ -9,7 +9,6 @@
             "prettier --write -u"
         ]
     },
-    "pre-commit": "lint-staged",
     "scripts": {
         "lint-staged": "lint-staged",
         "dev": "node esbuild.config.mjs",
@@ -24,7 +23,8 @@
         "oxlint:fix": "oxlint --fix ./src/**/*.{js,ts,json}",
         "prettier": "prettier --check ./src/**/*.{js,ts,json}",
         "prettier:fix": "prettier --write ./src/**/*.{js,ts,json}",
-        "version": "node version-bump.mjs && git add manifest.json versions.json package.json package-lock.json"
+        "version": "node version-bump.mjs && git add manifest.json versions.json package.json package-lock.json",
+        "prepare": "husky install"
     },
     "keywords": [],
     "author": "",
@@ -38,6 +38,7 @@
         "esbuild": "0.21.4",
         "eslint": "^8.57.0",
         "eslint-plugin-tailwindcss": "^3.13.0",
+        "husky": "^8.0.0",
         "lint-staged": "^15.2.5",
         "obsidian": "latest",
         "oxlint": "^0.2.13",
