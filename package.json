@@ -24,8 +24,7 @@
         "oxlint:fix": "oxlint --fix ./src/**/*.{js,ts,json}",
         "prettier": "prettier --check ./src/**/*.{js,ts,json}",
         "prettier:fix": "prettier --write ./src/**/*.{js,ts,json}",
-        "version": "node version-bump.mjs && git add manifest.json versions.json package.json package-lock.json",
-        "prepare": "husky"
+        "version": "node version-bump.mjs && git add manifest.json versions.json package.json package-lock.json"
     },
     "keywords": [],
     "author": "",
