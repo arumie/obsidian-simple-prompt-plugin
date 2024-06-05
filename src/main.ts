@@ -77,6 +77,7 @@ export default class SimplePromptPlugin extends Plugin {
             if (this.settings.promptTemplates[c.type] === undefined) {
                 this.settings.promptTemplates[c.type] =
                     DEFAULT_SETTINGS.promptTemplates[c.type];
+                this.saveSettings();
             }
         }
     }

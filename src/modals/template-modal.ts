@@ -3,6 +3,7 @@ import {
     CURSOR_COMMAND_NAME,
     DOC_COMMAND_NAME,
     SELECTION_COMMAND_NAME,
+    YT_TRANSCRIPT_COMMAND_NAME,
 } from "src/constants";
 import SimplePromptPlugin from "src/main";
 import { CommandType } from "src/types";
@@ -79,6 +80,8 @@ export default class TemplateModal extends Modal {
                 return CURSOR_COMMAND_NAME;
             case "selection":
                 return SELECTION_COMMAND_NAME;
+            case "youtube":
+                return YT_TRANSCRIPT_COMMAND_NAME;
         }
     }
 
