@@ -4,6 +4,7 @@ import {
     PluginSettingTab,
     Setting,
     TextAreaComponent,
+    TextComponent,
 } from "obsidian";
 import {
     CURSOR_COMMAND_NAME,
@@ -32,17 +33,27 @@ class SimplePromptSettingTab extends PluginSettingTab {
 
         new Setting(containerEl).setHeading().setName("Model");
 
-        const apiKeySetting = new Setting(containerEl)
+        let apiInput: TextComponent | null = null;
+
+        new Setting(containerEl)
             .setName("API key")
-            .setDesc("API key for LLM");
-        apiKeySetting.addButton((btn) => {
-            btn.setIcon("key")
-                .setTooltip("Set API key")
-                .onClick(async () => {
-                    new ApiKeyModal(this.plugin).open();
-                });
-            return btn;
-        });
+            .setDesc("Click '✓' to save.")
+            .addText((text) => {
+                text.setPlaceholder("API key");
+                apiInput = text;
+            })
+            .addExtraButton((button) =>
+                button
+                    .setIcon("checkmark")
+                    .setTooltip("Set API key")
+                    .onClick(async () => {
+                        if (apiInput == null) return;
+                        this.plugin.settings.apiKey = apiInput.getValue();
+                        apiInput.setValue("");
+                        await this.plugin.saveSettings();
+                        new Notice("API key set successfully");
+                    }),
+            );
 
         new Setting(containerEl)
             .setName("Model")
