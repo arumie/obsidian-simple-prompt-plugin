@@ -30,6 +30,16 @@ export default class PromptModal extends Modal {
     }
 
     onOpen() {
+        if (
+            this.plugin.settings.apiKey === null ||
+            this.plugin.settings.apiKey === ""
+        ) {
+            new Notice(
+                "[Simple Prompt] Missing API key. Please enter your API key in the settings",
+            );
+            this.close();
+            return;
+        }
         const { contentEl, modalEl } = this;
         modalEl.addClasses(["pr-w-1/2"]);
         const wrapper = contentEl.createEl("div");
@@ -88,20 +98,28 @@ export default class PromptModal extends Modal {
             const loader = wrapper.createEl("span");
             wrapper.addClasses(["pr-flex", "pr-flex-col", "pr-items-center"]);
             loader.addClasses(["loading", "dots", "pr-text-xl"]);
-            switch (this.type) {
-                case "document":
-                    await this.generateForDocument(textarea);
-                    break;
-                case "cursor":
-                    await this.generateAtCursor(textarea);
-                    break;
-                case "selection":
-                    await this.generateForSelection(textarea);
-                    break;
-                case "youtube":
-                    if (ytLinkInput != null) {
-                        await this.generateForYoutube(textarea, ytLinkInput);
-                    }
+            try {
+                switch (this.type) {
+                    case "document":
+                        await this.generateForDocument(textarea);
+                        break;
+                    case "cursor":
+                        await this.generateAtCursor(textarea);
+                        break;
+                    case "selection":
+                        await this.generateForSelection(textarea);
+                        break;
+                    case "youtube":
+                        if (ytLinkInput != null) {
+                            await this.generateForYoutube(
+                                textarea,
+                                ytLinkInput,
+                            );
+                        }
+                }
+            } catch (e) {
+                new Notice(`Unexpected Error: ${e}`);
+                return;
             }
 
             this.close();
@@ -291,21 +309,18 @@ export default class PromptModal extends Modal {
         const link = input.value;
         new Notice("Fetching transcript from YouTube");
         let videoData: VideoResponse;
-
-        try {
-            videoData = await YoutubeTranscript.fetchVideoData(link, {
-                lang: "en",
-            });
-        } catch (e) {
-            console.error(e);
-            new Notice(`Error fetching transcript: ${e}`);
-            return;
-        }
+        videoData = await YoutubeTranscript.fetchVideoData(link, {
+            lang: "en",
+        });
+        console.log(videoData);
 
         const prompt = this.plugin.settings.promptTemplates.youtube
-            .replace("<TITLE>", videoData.videoDetails.title)
-            .replace("<AUTHOR>", videoData.videoDetails.author)
-            .replace("<KEYWORDS>", videoData.videoDetails.keywords.join(", "))
+            .replace("<TITLE>", videoData.videoDetails.title ?? "")
+            .replace("<AUTHOR>", videoData.videoDetails.author ?? "")
+            .replace(
+                "<KEYWORDS>",
+                videoData.videoDetails.keywords?.join(", ") ?? "",
+            )
             .replace(
                 "<TRANSCRIPT>",
                 videoData.transcript.map((t) => t.text).join(" "),

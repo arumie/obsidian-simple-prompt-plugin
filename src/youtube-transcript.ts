@@ -63,9 +63,9 @@ export interface TranscriptConfig {
 export interface VideoResponse {
     transcript: TranscriptResponse[];
     videoDetails: {
-        title: string;
-        author: string;
-        keywords: string[];
+        title?: string;
+        author?: string;
+        keywords?: string[];
     };
 }
 export interface TranscriptResponse {

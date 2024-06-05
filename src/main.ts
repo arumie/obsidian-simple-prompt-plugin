@@ -14,9 +14,9 @@ export default class SimplePromptPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
-        if (!this.settings.apiKey) {
+        if (this.settings.apiKey == null || this.settings.apiKey === "") {
             new Notice(
-                "[Simple Prompt] Please enter your API key in the settings or with the command 'Set API key'",
+                "[Simple Prompt] No API key set. Please enter your API key in the settings",
             );
         }
 
