@@ -1,6 +1,7 @@
 import { Editor, Modal, Notice, Setting } from "obsidian";
 import { generate, generateStreaming } from "src/llms/openai/generate";
 import SimplePromptPlugin from "src/main";
+import { VideoResponse, YoutubeTranscript } from "src/youtube-transcript";
 import {
     CURSOR_COMMAND_NAME,
     CURSOR_COMMAND_SUBTITLE,
@@ -12,7 +13,6 @@ import {
     YT_TRANSCRIPT_COMMAND_SUBTITLE,
 } from "../constants";
 import { CommandType } from "../types";
-import { VideoResponse, YoutubeTranscript } from "src/youtube-transcript";
 
 export default class PromptModal extends Modal {
     editor: Editor;
@@ -308,11 +308,12 @@ export default class PromptModal extends Modal {
     ) {
         const link = input.value;
         new Notice("Fetching transcript from YouTube");
-        let videoData: VideoResponse;
-        videoData = await YoutubeTranscript.fetchVideoData(link, {
-            lang: "en",
-        });
-        console.log(videoData);
+        const videoData: VideoResponse = await YoutubeTranscript.fetchVideoData(
+            link,
+            {
+                lang: "en",
+            },
+        );
 
         const prompt = this.plugin.settings.promptTemplates.youtube
             .replace("<TITLE>", videoData.videoDetails.title ?? "")
