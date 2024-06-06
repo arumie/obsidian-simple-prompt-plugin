@@ -1,4 +1,4 @@
-import { Modal, Notice } from "obsidian";
+import { Modal } from "obsidian";
 import {
     CURSOR_COMMAND_NAME,
     DOC_COMMAND_NAME,
@@ -7,6 +7,7 @@ import {
 } from "src/constants";
 import SimplePromptPlugin from "src/main";
 import { CommandType } from "src/types";
+import { notice } from "src/utils";
 
 export default class TemplateModal extends Modal {
     plugin: SimplePromptPlugin;
@@ -61,7 +62,7 @@ export default class TemplateModal extends Modal {
             }
             this.plugin.settings.promptTemplates[this.type] = input.value;
             await this.plugin.saveSettings();
-            new Notice("Template successfully changed!");
+            notice("Template successfully changed!");
             this.close();
         });
         button.addClasses(["pr-p-5"]);
@@ -95,7 +96,7 @@ export default class TemplateModal extends Modal {
                     const errorMsg =
                         "Document prompt template must include <DOCUMENT> and <REQUEST>";
                     console.error(errorMsg);
-                    new Notice(errorMsg);
+                    notice(errorMsg);
                     return false;
                 }
                 break;
@@ -107,7 +108,7 @@ export default class TemplateModal extends Modal {
                     const errorMsg =
                         "Selection prompt template must include <SELECTION> and <REQUEST>";
                     console.error(errorMsg);
-                    new Notice(errorMsg);
+                    notice(errorMsg);
                     return false;
                 }
                 break;
@@ -116,7 +117,7 @@ export default class TemplateModal extends Modal {
                     const errorMsg =
                         "Cursor prompt template must include <QUERY>";
                     console.error(errorMsg);
-                    new Notice(errorMsg);
+                    notice(errorMsg);
                     return false;
                 }
                 break;

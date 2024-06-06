@@ -1,12 +1,12 @@
 import {
     App,
-    Notice,
     PluginSettingTab,
     Setting,
     TextAreaComponent,
     TextComponent,
 } from "obsidian";
 import {
+    API_KEY_PROVIDERS,
     CURSOR_COMMAND_NAME,
     DEFAULT_SETTINGS,
     DOC_COMMAND_NAME,
@@ -15,7 +15,16 @@ import {
 } from "./constants";
 import SimplePromptPlugin from "./main";
 import TemplateModal from "./modals/template-modal";
-import { CommandType, OpenAIModelType } from "./types";
+import {
+    CommandType,
+    LlmProviderApiKeyType,
+    LlmProviderType,
+    OllamaModelType,
+    OpenAIModelType,
+    ollamaModels,
+    openaiModels,
+} from "./types";
+import { notice } from "./utils";
 
 class SimplePromptSettingTab extends PluginSettingTab {
     plugin: SimplePromptPlugin;
@@ -25,63 +34,136 @@ class SimplePromptSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
-    display(): void {
-        const { containerEl } = this;
-
+    renderSettings(containerEl: HTMLElement) {
         containerEl.empty();
 
         new Setting(containerEl).setHeading().setName("Model");
-
-        let apiInput: TextComponent | null = null;
-
         new Setting(containerEl)
-            .setName("API key")
-            .setDesc("Click '✓' to save.")
-            .addText((text) => {
-                text.setPlaceholder("API key");
-                apiInput = text;
-            })
-            .addExtraButton((button) =>
-                button
-                    .setIcon("checkmark")
-                    .setTooltip("Set API key")
-                    .onClick(async () => {
-                        if (apiInput == null) return;
-                        this.plugin.settings.apiKey = apiInput.getValue();
-                        apiInput.setValue("");
+            .setClass("provider-setting")
+            .setName("Provider")
+            .setDesc("Which LLM provider to use")
+            .addDropdown((dropdown) =>
+                dropdown
+                    .addOptions({
+                        openai: "openai",
+                        ollama: "ollama",
+                    })
+                    .setValue(this.plugin.settings.provider)
+                    .onChange(async (value) => {
+                        this.plugin.settings.provider =
+                            value as LlmProviderType;
+                        if (value === "ollama") {
+                            this.plugin.settings.streaming = false;
+                        }
                         await this.plugin.saveSettings();
-                        new Notice("API key set successfully");
+                        this.renderSettings(containerEl);
                     }),
             );
+
+        if (API_KEY_PROVIDERS.includes(this.plugin.settings.provider)) {
+            const key =
+                this.plugin.settings.apiKey[
+                    this.plugin.settings.provider as LlmProviderApiKeyType
+                ];
+            const desc = `${key ? "Current key: " + key.substring(0, 10) + "..." : "Currently missing API key."}`;
+            let apiInput: TextComponent | null = null;
+            new Setting(containerEl)
+                .setName("API key")
+                .setDesc(desc)
+                .addText((text) => {
+                    text.setPlaceholder("API key");
+                    apiInput = text;
+                })
+                .addExtraButton((button) =>
+                    button
+                        .setIcon("checkmark")
+                        .setTooltip("Set API key")
+                        .onClick(async () => {
+                            if (apiInput == null) {
+                                return;
+                            }
+
+                            this.plugin.settings.apiKey[
+                                this.plugin.settings
+                                    .provider as LlmProviderApiKeyType
+                            ] = apiInput.getValue();
+
+                            apiInput.setValue("");
+                            await this.plugin.saveSettings();
+                            this.renderSettings(containerEl);
+                            notice("API key set successfully");
+                        }),
+                )
+                .addExtraButton((button) =>
+                    button
+                        .setIcon("trash")
+                        .setTooltip("Clear API key")
+                        .onClick(async () => {
+                            if (apiInput == null) {
+                                return;
+                            }
+
+                            this.plugin.settings.apiKey[
+                                this.plugin.settings
+                                    .provider as LlmProviderApiKeyType
+                            ] = null;
+
+                            apiInput.setValue("");
+                            await this.plugin.saveSettings();
+                            this.renderSettings(containerEl);
+                            notice("API key cleared");
+                        }),
+                );
+        }
+
+        const setModelValue = (value: OpenAIModelType | OllamaModelType) => {
+            switch (this.plugin.settings.provider) {
+                case "openai":
+                    this.plugin.settings.model.openai =
+                        value as OpenAIModelType;
+                    break;
+                case "ollama":
+                    return (this.plugin.settings.model.ollama =
+                        value as OllamaModelType);
+            }
+        };
 
         new Setting(containerEl)
             .setName("Model")
             .setDesc("Which LLM model to use")
-            .addDropdown((dropdown) =>
+            .addDropdown((dropdown) => {
+                const options =
+                    this.plugin.settings.provider === "ollama"
+                        ? ollamaModels
+                        : openaiModels;
+                for (const option of options) {
+                    dropdown.addOption(option, option);
+                }
                 dropdown
-                    .addOptions({
-                        "gpt-3.5-turbo": "GPT-3.5 Turbo",
-                        "gpt-4-turbo": "GPT-4 Turbo",
-                        "gpt-4o": "GPT-4 Omni",
-                    })
-                    .setValue(this.plugin.settings.model)
+                    .setValue(
+                        this.plugin.settings.model[
+                            this.plugin.settings.provider
+                        ],
+                    )
                     .onChange(async (value: OpenAIModelType) => {
-                        this.plugin.settings.model = value;
+                        setModelValue(value);
                         await this.plugin.saveSettings();
-                    }),
-            );
+                    });
+            });
 
-        new Setting(containerEl)
-            .setName("Streaming")
-            .setDesc("Enable streaming of responses from LLMs")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.streaming)
-                    .onChange(async (value) => {
-                        this.plugin.settings.streaming = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
+        if (this.plugin.settings.provider === "openai") {
+            new Setting(containerEl)
+                .setName("Streaming")
+                .setDesc("Enable streaming of responses from LLMs")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(this.plugin.settings.streaming)
+                        .onChange(async (value) => {
+                            this.plugin.settings.streaming = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+        }
 
         new Setting(containerEl).setHeading().setName("Recent Prompts");
         new Setting(containerEl)
@@ -162,10 +244,15 @@ class SimplePromptSettingTab extends PluginSettingTab {
                             DEFAULT_SETTINGS.promptTemplates[currentTemplate];
                         this.plugin.settings.promptTemplates[currentTemplate] =
                             defaultTemplate;
-                        new Notice("Template successfully reset!");
+                        notice("Template successfully reset!");
                         this.plugin.saveSettings();
                     }),
             );
+    }
+
+    display(): void {
+        const { containerEl } = this;
+        this.renderSettings(containerEl);
     }
 }
 

@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
+import { Editor, MarkdownView, Plugin } from "obsidian";
 import {
     DEFAULT_SETTINGS,
     PROMPT_COMMANDS,
@@ -8,25 +8,27 @@ import {
 import PromptModal from "./modals/prompt-modal";
 import SimplePromptSettingTab from "./settings";
 import { SimplePromptPluginSettings } from "./types";
+import { notice } from "./utils";
 
 export default class SimplePromptPlugin extends Plugin {
     settings: SimplePromptPluginSettings;
 
     async onload() {
         await this.loadSettings();
-        if (this.settings.apiKey == null || this.settings.apiKey === "") {
-            new Notice(
-                "[Simple Prompt] No API key set. Please enter your API key in the settings",
-            );
-        }
 
         this.addCommand({
             id: "settings-toggle-llm-streaming",
             name: SETTINGS_TOGGLE_STREAMING_COMMAND_NAME,
             callback: async () => {
+                if (this.settings.provider === "ollama") {
+                    notice(
+                        "Streaming is not supported for Ollama at this time.",
+                    );
+                    return;
+                }
                 this.settings.streaming = !this.settings.streaming;
                 await this.saveSettings();
-                new Notice(
+                notice(
                     `Streaming LLM responses is now ${
                         this.settings.streaming ? "enabled" : "disabled"
                     }`,
@@ -41,7 +43,7 @@ export default class SimplePromptPlugin extends Plugin {
                 this.settings.recentPromptsEnabled =
                     !this.settings.recentPromptsEnabled;
                 await this.saveSettings();
-                new Notice(
+                notice(
                     `Recent prompts are now ${
                         this.settings.recentPromptsEnabled
                             ? "enabled"
@@ -67,11 +69,20 @@ export default class SimplePromptPlugin extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        this.settings = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            await this.loadData(),
-        );
+        const userData = await this.loadData();
+        if (userData.settingsVersion !== DEFAULT_SETTINGS.settingsVersion) {
+            console.log(
+                "Settings version mismatch, resetting to default. Previous version: ",
+                userData,
+            );
+            this.settings = DEFAULT_SETTINGS;
+            this.saveSettings();
+            notice(
+                "Due to updated version, settings have been reset to default. Please reconfigure API keys in the settings",
+            );
+        } else {
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, userData);
+        }
 
         for (const c of PROMPT_COMMANDS) {
             if (this.settings.promptTemplates[c.type] === undefined) {

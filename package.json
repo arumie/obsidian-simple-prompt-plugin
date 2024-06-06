@@ -52,6 +52,7 @@
     "dependencies": {
         "autoprefixer": "^10.4.14",
         "fs": "^0.0.1-security",
+        "ollama": "^0.5.1",
         "openai": "^4.47.1",
         "postcss-cli": "^10.1.0",
         "postcss-import": "^15.1.0",

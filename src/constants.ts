@@ -1,4 +1,8 @@
-import { CommandType, SimplePromptPluginSettings } from "./types";
+import {
+    CommandType,
+    LlmProviderType,
+    SimplePromptPluginSettings,
+} from "./types";
 
 // PROMPTS
 export const DEFAULT_CURSOR_PROMPT_TEMPLATE = `
@@ -181,8 +185,15 @@ export const PROMPT_COMMANDS: {
 
 // SETTINGS
 export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
-    apiKey: null,
-    model: "gpt-3.5-turbo",
+    settingsVersion: 1,
+    provider: "openai",
+    apiKey: {
+        openai: null,
+    },
+    model: {
+        openai: "gpt-3.5-turbo",
+        ollama: "llama3",
+    },
     recentPrompts: [],
     recentsLimit: 5,
     recentPromptsEnabled: true,
@@ -195,7 +206,9 @@ export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
     streaming: false,
 };
 
-// SETTINGS COMMANDS
+// SETTINGS
 export const SETTINGS_TOGGLE_STREAMING_COMMAND_NAME = "Toggle streaming";
 export const SETTINGS_TOGGLE_RECENT_PROMPTS_COMMAND_NAME =
     "Toggle Enable/Disable Recent Prompts";
+
+export const API_KEY_PROVIDERS: LlmProviderType[] = ["openai"];

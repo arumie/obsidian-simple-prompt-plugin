@@ -1,6 +1,7 @@
-import { Editor, Modal, Notice, Setting } from "obsidian";
-import { generate, generateStreaming } from "src/llms/openai/generate";
+import { Editor, Modal, Setting } from "obsidian";
+import { generate, generateStreaming } from "src/llms/generate";
 import SimplePromptPlugin from "src/main";
+import { notice } from "src/utils";
 import { VideoResponse, YoutubeTranscript } from "src/youtube-transcript";
 import {
     CURSOR_COMMAND_NAME,
@@ -31,11 +32,11 @@ export default class PromptModal extends Modal {
 
     onOpen() {
         if (
-            this.plugin.settings.apiKey === null ||
-            this.plugin.settings.apiKey === ""
+            this.plugin.settings.provider === "openai" &&
+            this.plugin.settings.apiKey.openai == null
         ) {
-            new Notice(
-                "[Simple Prompt] Missing API key. Please enter your API key in the settings",
+            notice(
+                "Missing API key. Please enter your API key in the settings",
             );
             this.close();
             return;
@@ -91,7 +92,7 @@ export default class PromptModal extends Modal {
         ]);
         button.addEventListener("click", async () => {
             if (textarea.value === "") {
-                new Notice("Please enter a prompt");
+                notice("Please enter a prompt");
                 return;
             }
             wrapper.empty();
@@ -118,7 +119,7 @@ export default class PromptModal extends Modal {
                         }
                 }
             } catch (e) {
-                new Notice(`Unexpected Error: ${e}`);
+                notice(`Unexpected Error: ${e}`);
                 return;
             }
 
@@ -249,17 +250,17 @@ export default class PromptModal extends Modal {
             };
             const onEnd = () => {
                 this.saveRecentPrompt(textarea);
-                new Notice("Action complete!");
+                notice("Action complete!");
             };
             await generateStreaming(
-                this.plugin.settings,
+                this.plugin,
                 prompt,
                 (chunk) => this.handleChunk(chunk),
                 onStart,
                 onEnd,
             );
         } else {
-            await generate(this.plugin.settings, prompt, (result) => {
+            await generate(this.plugin, prompt, (result) => {
                 this.editor.setValue(result);
                 this.saveRecentPrompt(textarea);
             });
@@ -285,17 +286,17 @@ export default class PromptModal extends Modal {
             };
             const onEnd = () => {
                 this.saveRecentPrompt(textarea);
-                new Notice("Action complete!");
+                notice("Action complete!");
             };
             await generateStreaming(
-                this.plugin.settings,
+                this.plugin,
                 prompt,
                 (chunk) => this.handleChunk(chunk),
                 onStart,
                 onEnd,
             );
         } else {
-            await generate(this.plugin.settings, prompt, (result) => {
+            await generate(this.plugin, prompt, (result) => {
                 this.editor.replaceSelection(result);
                 this.saveRecentPrompt(textarea);
             });
@@ -307,7 +308,7 @@ export default class PromptModal extends Modal {
         input: HTMLInputElement,
     ) {
         const link = input.value;
-        new Notice("Fetching transcript from YouTube");
+        notice("Fetching transcript from YouTube");
         const videoData: VideoResponse = await YoutubeTranscript.fetchVideoData(
             link,
             {
@@ -341,22 +342,23 @@ export default class PromptModal extends Modal {
             };
             const onEnd = () => {
                 this.saveRecentPrompt(textarea);
-                new Notice("Action complete!");
+                notice("Action complete!");
             };
             await generateStreaming(
-                this.plugin.settings,
+                this.plugin,
                 prompt,
                 (chunk) => this.handleChunk(chunk),
                 onStart,
                 onEnd,
             );
         } else {
-            await generate(this.plugin.settings, prompt, (result) => {
+            await generate(this.plugin, prompt, (result) => {
                 this.editor.replaceRange(
                     result,
                     this.editor.getCursor(),
                     this.editor.getCursor(),
                 );
+                this.saveRecentPrompt(textarea);
             });
         }
     }
