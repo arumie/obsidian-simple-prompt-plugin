@@ -1,10 +1,39 @@
-export type OpenAIModelType = "gpt-3.5-turbo" | "gpt-4-turbo" | "gpt-4o";
+export const openaiModels = ["gpt-3.5-turbo", "gpt-4-turbo", "gpt-4o"] as const;
+export type OpenAIModelType = (typeof openaiModels)[number];
+
+export const ollamaModels = [
+    "llama3",
+    "llama2",
+    "llama2-uncensored",
+    "phi3",
+    "gemma",
+    "codegemma",
+    "codellama",
+    "starcoder2",
+    "mistral",
+    "mixtral",
+    "qwen",
+    "aya",
+    "tinyllama",
+] as const;
+export type OllamaModelType = (typeof ollamaModels)[number];
+
+export type LlmModelType = {
+    openai: OpenAIModelType;
+    ollama: OllamaModelType;
+};
+
+export type LlmProviderType = "ollama" | "openai";
 
 export type CommandType = "selection" | "cursor" | "document" | "youtube";
 
 export interface SimplePromptPluginSettings {
-    apiKey: string | null;
-    model: OpenAIModelType;
+    settingsVersion: number;
+    provider: LlmProviderType;
+    apiKey: {
+        openai: string | null;
+    };
+    model: LlmModelType;
     recentPrompts: string[];
     recentsLimit: number;
     recentPromptsEnabled: boolean;

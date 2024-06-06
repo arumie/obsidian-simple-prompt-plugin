@@ -8,17 +8,13 @@ import {
 import PromptModal from "./modals/prompt-modal";
 import SimplePromptSettingTab from "./settings";
 import { SimplePromptPluginSettings } from "./types";
+import { data } from "autoprefixer";
 
 export default class SimplePromptPlugin extends Plugin {
     settings: SimplePromptPluginSettings;
 
     async onload() {
         await this.loadSettings();
-        if (this.settings.apiKey == null || this.settings.apiKey === "") {
-            new Notice(
-                "[Simple Prompt] No API key set. Please enter your API key in the settings",
-            );
-        }
 
         this.addCommand({
             id: "settings-toggle-llm-streaming",
@@ -67,11 +63,20 @@ export default class SimplePromptPlugin extends Plugin {
     onunload() {}
 
     async loadSettings() {
-        this.settings = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            await this.loadData(),
-        );
+        const userData = await this.loadData();
+        if (userData.settingsVersion !== DEFAULT_SETTINGS.settingsVersion) {
+            console.log(
+                "Settings version mismatch, resetting to default. Previous version: ",
+                userData,
+            );
+            this.settings = DEFAULT_SETTINGS;
+            this.saveSettings();
+            new Notice(
+                "[Simple Prompt] Due to updated version, settings have been reset to default. Please reconfigure API keys in the settings",
+            );
+        } else {
+            this.settings = Object.assign({}, DEFAULT_SETTINGS, userData);
+        }
 
         for (const c of PROMPT_COMMANDS) {
             if (this.settings.promptTemplates[c.type] === undefined) {

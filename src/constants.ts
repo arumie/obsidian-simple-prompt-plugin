@@ -181,8 +181,15 @@ export const PROMPT_COMMANDS: {
 
 // SETTINGS
 export const DEFAULT_SETTINGS: SimplePromptPluginSettings = {
-    apiKey: null,
-    model: "gpt-3.5-turbo",
+    settingsVersion: 1,
+    provider: "openai",
+    apiKey: {
+        openai: null,
+    },
+    model: {
+        openai: "gpt-3.5-turbo",
+        ollama: "llama3",
+    },
     recentPrompts: [],
     recentsLimit: 5,
     recentPromptsEnabled: true,

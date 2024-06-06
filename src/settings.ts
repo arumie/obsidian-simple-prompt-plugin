@@ -1,5 +1,6 @@
 import {
     App,
+    DropdownComponent,
     Notice,
     PluginSettingTab,
     Setting,
@@ -15,7 +16,14 @@ import {
 } from "./constants";
 import SimplePromptPlugin from "./main";
 import TemplateModal from "./modals/template-modal";
-import { CommandType, OpenAIModelType } from "./types";
+import {
+    CommandType,
+    LlmProviderType,
+    OllamaModelType,
+    OpenAIModelType,
+    ollamaModels,
+    openaiModels,
+} from "./types";
 
 class SimplePromptSettingTab extends PluginSettingTab {
     plugin: SimplePromptPlugin;
@@ -25,63 +33,111 @@ class SimplePromptSettingTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
-    display(): void {
-        const { containerEl } = this;
-
+    renderSettings(containerEl: HTMLElement) {
         containerEl.empty();
 
         new Setting(containerEl).setHeading().setName("Model");
-
-        let apiInput: TextComponent | null = null;
-
         new Setting(containerEl)
-            .setName("API key")
-            .setDesc("Click '✓' to save.")
-            .addText((text) => {
-                text.setPlaceholder("API key");
-                apiInput = text;
-            })
-            .addExtraButton((button) =>
-                button
-                    .setIcon("checkmark")
-                    .setTooltip("Set API key")
-                    .onClick(async () => {
-                        if (apiInput == null) return;
-                        this.plugin.settings.apiKey = apiInput.getValue();
-                        apiInput.setValue("");
+            .setClass("provider-setting")
+            .setName("Provider")
+            .setDesc("Which LLM provider to use")
+            .addDropdown((dropdown) =>
+                dropdown
+                    .addOptions({
+                        openai: "openai",
+                        ollama: "ollama",
+                    })
+                    .setValue(this.plugin.settings.provider)
+                    .onChange(async (value) => {
+                        this.plugin.settings.provider =
+                            value as LlmProviderType;
+                        if (value === "ollama") {
+                            this.plugin.settings.streaming = false;
+                        }
                         await this.plugin.saveSettings();
-                        new Notice("API key set successfully");
+                        this.renderSettings(containerEl);
                     }),
             );
+
+        if (this.plugin.settings.provider === "openai") {
+            let apiInput: TextComponent | null = null;
+            new Setting(containerEl)
+                .setName("API key")
+                .setDesc("Click '✓' to save.")
+                .addText((text) => {
+                    text.setPlaceholder("API key");
+                    apiInput = text;
+                })
+                .addExtraButton((button) =>
+                    button
+                        .setIcon("checkmark")
+                        .setTooltip("Set API key")
+                        .onClick(async () => {
+                            if (apiInput == null) return;
+                            if (this.plugin.settings.provider === "openai") {
+                                this.plugin.settings.apiKey.openai =
+                                    apiInput.getValue();
+                            }
+                            apiInput.setValue("");
+                            await this.plugin.saveSettings();
+                            new Notice("API key set successfully");
+                        }),
+                );
+        }
+
+        const initModelValue = () => {
+            switch (this.plugin.settings.provider) {
+                case "openai":
+                    return this.plugin.settings.model.openai;
+                case "ollama":
+                    return this.plugin.settings.model.ollama;
+            }
+        };
+
+        const setModelValue = (value: OpenAIModelType | OllamaModelType) => {
+            switch (this.plugin.settings.provider) {
+                case "openai":
+                    this.plugin.settings.model.openai =
+                        value as OpenAIModelType;
+                    break;
+                case "ollama":
+                    return (this.plugin.settings.model.ollama =
+                        value as OllamaModelType);
+            }
+        };
 
         new Setting(containerEl)
             .setName("Model")
             .setDesc("Which LLM model to use")
-            .addDropdown((dropdown) =>
+            .addDropdown((dropdown) => {
+                const options =
+                    this.plugin.settings.provider === "ollama"
+                        ? ollamaModels
+                        : openaiModels;
+                for (const option of options) {
+                    dropdown.addOption(option, option);
+                }
                 dropdown
-                    .addOptions({
-                        "gpt-3.5-turbo": "GPT-3.5 Turbo",
-                        "gpt-4-turbo": "GPT-4 Turbo",
-                        "gpt-4o": "GPT-4 Omni",
-                    })
-                    .setValue(this.plugin.settings.model)
+                    .setValue(initModelValue())
                     .onChange(async (value: OpenAIModelType) => {
-                        this.plugin.settings.model = value;
+                        setModelValue(value);
                         await this.plugin.saveSettings();
-                    }),
-            );
+                    });
+            });
 
-        new Setting(containerEl)
-            .setName("Streaming")
-            .setDesc("Enable streaming of responses from LLMs")
-            .addToggle((toggle) =>
-                toggle
-                    .setValue(this.plugin.settings.streaming)
-                    .onChange(async (value) => {
-                        this.plugin.settings.streaming = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
+        if (this.plugin.settings.provider === "openai") {
+            new Setting(containerEl)
+                .setName("Streaming")
+                .setDesc("Enable streaming of responses from LLMs")
+                .addToggle((toggle) =>
+                    toggle
+                        .setValue(this.plugin.settings.streaming)
+                        .onChange(async (value) => {
+                            this.plugin.settings.streaming = value;
+                            await this.plugin.saveSettings();
+                        }),
+                );
+        }
 
         new Setting(containerEl).setHeading().setName("Recent Prompts");
         new Setting(containerEl)
@@ -166,6 +222,11 @@ class SimplePromptSettingTab extends PluginSettingTab {
                         this.plugin.saveSettings();
                     }),
             );
+    }
+
+    display(): void {
+        const { containerEl } = this;
+        this.renderSettings(containerEl);
     }
 }
 

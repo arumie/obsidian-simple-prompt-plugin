@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2024-06-16
+
+### Changed
+- Updated settings to allow for multiple in preparation for integrations with other LLM providers
+- Added "settingsVersion" to detect when breaking changes are made to settings
+
+### Added
+- Added support for using local models with Ollama
+
+### Fixed
+- Fixed issue with recent prompts not being saved for "Generate at cursor" command
+
 ## [0.6.4] - 2024-06-05
 
 ### Removed
