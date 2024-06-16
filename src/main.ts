@@ -70,7 +70,7 @@ export default class SimplePromptPlugin extends Plugin {
 
     async loadSettings() {
         const userData = await this.loadData();
-        if (userData.settingsVersion !== DEFAULT_SETTINGS.settingsVersion) {
+        if (userData?.settingsVersion !== DEFAULT_SETTINGS.settingsVersion) {
             console.log(
                 "Settings version mismatch, resetting to default. Previous version: ",
                 userData,
